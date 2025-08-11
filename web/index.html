@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定时任务管理系统</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>定时任务管理系统</h1>
+        
+        <div class="section">
+            <h2>任务列表</h2>
+            <button id="refreshTasks">刷新任务</button>
+            <table id="taskTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>名称</th>
+                        <th>调度</th>
+                        <th>命令</th>
+                        <th>方法</th>
+                        <th>状态</th>
+                        <th>描述</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 任务数据将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="section">
+            <h2>系统监控</h2>
+            <button id="refreshStats">刷新监控</button>
+            <div id="systemStats">
+                <!-- 系统监控数据将通过JavaScript动态加载 -->
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>添加/编辑任务</h2>
+            <form id="taskForm">
+                <input type="hidden" id="taskId">
+                <div>
+                    <label for="taskName">名称:</label>
+                    <input type="text" id="taskName" required>
+                </div>
+                <div>
+                    <label for="taskSchedule">调度 (Cron表达式):</label>
+                    <input type="text" id="taskSchedule" required>
+                </div>
+                <div>
+                    <label for="taskCommand">命令:</label>
+                    <input type="text" id="taskCommand" required>
+                </div>
+                <div>
+                    <label for="showHttpConfig">HTTP配置:</label>
+                    <select id="showHttpConfig" onchange="toggleHttpConfigManually()">
+                        <option value="auto">自动检测</option>
+                        <option value="show">始终显示</option>
+                        <option value="hide">始终隐藏</option>
+                    </select>
+                </div>
+                <div id="httpConfig" style="display: none;">
+                    <div>
+                        <label for="taskMethod">请求方法:</label>
+                        <select id="taskMethod">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                            <option value="PATCH">PATCH</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="taskHeaders">请求头 (JSON格式):</label>
+                        <textarea id="taskHeaders" placeholder='{"Content-Type": "application/json", "Authorization": "Bearer token"}'></textarea>
+                    </div>
+                </div>
+                <div>
+                    <label for="taskDescription">描述:</label>
+                    <textarea id="taskDescription"></textarea>
+                </div>
+                <div>
+                    <label for="taskEnabled">启用:</label>
+                    <input type="checkbox" id="taskEnabled">
+                </div>
+                <button type="submit">保存任务</button>
+                <button type="button" id="cancelEdit">取消</button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="static/script.js"></script>
+    
+    <!-- 模态框 -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('modal').style.display='none'">&times;</span>
+            <h2 id="modal-title"></h2>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+</body>
+</html>
