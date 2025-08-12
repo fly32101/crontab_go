@@ -79,18 +79,8 @@ jobs:
       env:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
-        CGO_ENABLED: 1
+        CGO_ENABLED: 0
       run: |
-        if [ "${{ matrix.goos }}" = "linux" ]; then
-          # 为 Linux 安装 CGO 依赖
-          sudo apt-get update
-          sudo apt-get install -y gcc-multilib
-          if [ "${{ matrix.goarch }}" = "arm64" ]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu
-            export CC=aarch64-linux-gnu-gcc
-          fi
-        fi
-        
         go build -ldflags="-s -w" -o crontab-go-${{ matrix.suffix }} ./cmd
 
     - name: Create release package
