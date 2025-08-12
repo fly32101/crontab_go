@@ -43,18 +43,15 @@ jobs:
           - goos: linux
             goarch: amd64
             suffix: linux-amd64
+            runner: ubuntu-latest
           - goos: linux
             goarch: arm64
             suffix: linux-arm64
+            runner: ubuntu-latest
           - goos: windows
             goarch: amd64
             suffix: windows-amd64.exe
-          - goos: darwin
-            goarch: amd64
-            suffix: darwin-amd64
-          - goos: darwin
-            goarch: arm64
-            suffix: darwin-arm64
+            runner: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -75,13 +72,31 @@ jobs:
         ls -la web/dist/
         echo "Frontend files downloaded successfully"
 
+    - name: Install cross-compilation dependencies
+      run: |
+        sudo apt-get update
+        if [ "${{ matrix.goos }}" = "linux" ] && [ "${{ matrix.goarch }}" = "arm64" ]; then
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+        elif [ "${{ matrix.goos }}" = "windows" ]; then
+          sudo apt-get install -y gcc-mingw-w64
+        fi
+
     - name: Build binary
       env:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
-        CGO_ENABLED: 0
+        CGO_ENABLED: 1
       run: |
-        go build -ldflags="-s -w" -o crontab-go-${{ matrix.suffix }} ./cmd
+        if [ "${{ matrix.goos }}" = "linux" ] && [ "${{ matrix.goarch }}" = "amd64" ]; then
+          # Linux AMD64 - native compilation
+          go build -ldflags="-s -w" -o crontab-go-${{ matrix.suffix }} ./cmd
+        elif [ "${{ matrix.goos }}" = "linux" ] && [ "${{ matrix.goarch }}" = "arm64" ]; then
+          # Linux ARM64 - cross compilation
+          CC=aarch64-linux-gnu-gcc go build -ldflags="-s -w" -o crontab-go-${{ matrix.suffix }} ./cmd
+        elif [ "${{ matrix.goos }}" = "windows" ] && [ "${{ matrix.goarch }}" = "amd64" ]; then
+          # Windows AMD64 - cross compilation
+          CC=x86_64-w64-mingw32-gcc go build -ldflags="-s -w" -o crontab-go-${{ matrix.suffix }} ./cmd
+        fi
 
     - name: Create release package
       run: |
@@ -120,6 +135,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: read
 
     steps:
     - uses: actions/checkout@v4
@@ -132,16 +148,21 @@ jobs:
 
     - name: List downloaded files
       run: |
-        find . -name "*.tar.gz" -o -name "*.zip" | head -20
+        echo "Current directory structure:"
+        ls -la
+        echo "Looking for archives:"
+        find . -name "*.tar.gz" -o -name "*.zip"
+        echo "All files:"
+        find . -type f
 
     - name: Create release and upload assets
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          crontab-go-*-package/*.tar.gz
-          crontab-go-*-package/*.zip
+          *.tar.gz
+          *.zip
         generate_release_notes: true
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}}
+        GITHUB_TOKEN: ${{ github.token }}}
