@@ -67,3 +67,16 @@ go/pkg/mod/
 # Local development files
 *.local.yml
 *.local.yaml
+
+# Frontend dependencies and build files
+web/node_modules/
+web/dist/
+web/.vite/
+web/.env
+web/.env.local
+web/.env.*.local
+web/coverage/
+web/*.log
+web/npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
