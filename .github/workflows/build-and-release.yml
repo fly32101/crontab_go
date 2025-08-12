@@ -102,11 +102,6 @@ jobs:
         body: |
           ## 🚀 Release Notes
           
-          ### 📦 Docker Images
-          ```bash
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
-          ```
-          
           ### 📥 Binary Downloads
           - **Linux AMD64**: `crontab-go-linux-amd64`
           - **Linux ARM64**: `crontab-go-linux-arm64`
@@ -114,19 +109,34 @@ jobs:
           - **macOS AMD64**: `crontab-go-darwin-amd64`
           - **macOS ARM64**: `crontab-go-darwin-arm64`
           
-          ### 🐳 Quick Start with Docker
-          ```bash
-          # 使用 Docker Compose
-          curl -O https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml
-          docker-compose up -d
+          ### 🚀 Quick Start
           
-          # 或直接运行
-          docker run -d -p 8080:8080 -v $(pwd)/data:/app/data ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          1. **下载对应平台的二进制文件**
+          2. **给执行权限** (Linux/macOS):
+             ```bash
+             chmod +x crontab-go-*
+             ```
+          3. **运行应用**:
+             ```bash
+             ./crontab-go-linux-amd64  # Linux
+             ./crontab-go-darwin-amd64 # macOS
+             crontab-go-windows-amd64.exe # Windows
+             ```
+          4. **访问应用**: http://localhost:8080
+          5. **默认账户**: admin/admin123
+          
+          ### 🐳 Docker 部署 (可选)
+          如果你想使用 Docker，可以自行构建镜像：
+          ```bash
+          git clone https://github.com/${{ github.repository }}.git
+          cd crontab_go
+          docker build -t crontab-go:${{ github.ref_name }} .
+          docker run -d -p 8080:8080 -v $(pwd)/data:/app/data crontab-go:${{ github.ref_name }}
           ```
           
           ### 📖 Documentation
           - [Installation Guide](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/README.md)
-          - [API Documentation](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/API.md)
+          - [Docker Deployment](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/DOCKER.md)
           - [Notification Setup](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/NOTIFICATION.md)
           - [Task Templates](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/TASK_TEMPLATES.md)
         draft: false
