@@ -189,7 +189,8 @@ func (h *Handler) GetTaskLogsWithPagination(c *gin.Context) {
 }
 
 func (h *Handler) GetSystemStats(c *gin.Context) {
-	stats, err := h.systemService.GetLatestStats()
+	// 返回实时系统统计数据
+	stats, err := h.systemService.GetRealTimeStats()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

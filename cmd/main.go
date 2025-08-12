@@ -38,6 +38,16 @@ func main() {
 		}
 	}()
 
+	// 启动数据清理任务，每分钟清理一次旧数据
+	go func() {
+		for {
+			time.Sleep(1 * time.Minute)
+			if err := systemService.CleanOldStats(); err != nil {
+				log.Printf("Failed to clean old stats: %v", err)
+			}
+		}
+	}()
+
 	// 启动HTTP服务器
 	server := http.NewServer(db.Client)
 	server.Start()

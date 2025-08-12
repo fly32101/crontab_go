@@ -41,3 +41,31 @@ func (r *SQLiteSystemRepository) GetStatsCount() (int64, error) {
 	}
 	return count, nil
 }
+
+func (r *SQLiteSystemRepository) KeepLatestStats(count int) error {
+	// 获取总记录数
+	var totalCount int64
+	if err := r.DB.Model(&entity.SystemStats{}).Count(&totalCount).Error; err != nil {
+		return err
+	}
+	
+	// 如果记录数小于等于要保留的数量，不需要删除
+	if totalCount <= int64(count) {
+		return nil
+	}
+	
+	// 删除多余的旧记录
+	// 先获取要保留的最新记录的最小ID
+	var minID uint
+	if err := r.DB.Model(&entity.SystemStats{}).
+		Select("id").
+		Order("timestamp DESC").
+		Limit(count).
+		Offset(count - 1).
+		Scan(&minID).Error; err != nil {
+		return err
+	}
+	
+	// 删除ID小于minID的记录
+	return r.DB.Where("id < ?", minID).Delete(&entity.SystemStats{}).Error
+}

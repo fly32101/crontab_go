@@ -296,20 +296,34 @@ Crontab Go 是一个基于 Go 语言的定时任务管理系统，提供 RESTful
 #### 获取系统统计信息
 
 - **URL**: `GET /api/v1/system/stats`
-- **描述**: 获取最新的系统统计信息
+- **描述**: 获取实时系统统计信息（不从数据库读取，直接获取当前系统状态）
 - **响应**:
   ```json
   {
-    "ID": 1,
+    "ID": 0,
     "CPUUsage": 25.5,
     "MemoryUsage": 45.2,
+    "MemoryTotal": 8192,
+    "MemoryUsed": 3686,
+    "MemoryFree": 4506,
+    "DiskUsage": 65.8,
+    "DiskTotal": 500,
+    "DiskUsed": 329,
+    "DiskFree": 171,
     "SystemLoad": 1.2,
+    "NetworkRxBytes": 1234567890,
+    "NetworkTxBytes": 987654321,
+    "ProcessCount": 156,
+    "GoroutineCount": 12,
+    "Uptime": 86400,
     "Timestamp": "2023-01-01T12:00:00Z"
   }
   ```
 - **状态码**:
   - 200: 成功
   - 500: 服务器内部错误
+
+**注意**: 此接口返回实时数据，不会存储到数据库中。历史数据仅保留最新的100条记录用于趋势分析。
 
 ## 数据模型
 

@@ -15,4 +15,7 @@ type SystemRepository interface {
 
 	// GetStatsCount 获取系统统计数据的总数
 	GetStatsCount() (int64, error)
+
+	// KeepLatestStats 只保留最新的N条统计数据
+	KeepLatestStats(count int) error
 }

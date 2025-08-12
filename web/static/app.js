@@ -363,6 +363,79 @@ const app = createApp({
             return new Date(timestamp).toLocaleString('zh-CN');
         },
         
+        // 格式化字节数
+        formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        },
+        
+        // 格式化运行时间
+        formatUptime(seconds) {
+            if (!seconds) return '0秒';
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            
+            if (days > 0) {
+                return `${days}天 ${hours}小时`;
+            } else if (hours > 0) {
+                return `${hours}小时 ${minutes}分钟`;
+            } else {
+                return `${minutes}分钟`;
+            }
+        },
+        
+        // 获取CPU颜色
+        getCPUColor(percentage) {
+            if (percentage < 50) return '#10b981';
+            if (percentage < 80) return '#f59e0b';
+            return '#ef4444';
+        },
+        
+        // 获取内存颜色
+        getMemoryColor(percentage) {
+            if (percentage < 60) return '#10b981';
+            if (percentage < 85) return '#f59e0b';
+            return '#ef4444';
+        },
+        
+        // 获取磁盘颜色
+        getDiskColor(percentage) {
+            if (percentage < 70) return '#10b981';
+            if (percentage < 90) return '#f59e0b';
+            return '#ef4444';
+        },
+
+        // 格式化字节数
+        formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        },
+
+        // 格式化运行时间
+        formatUptime(seconds) {
+            if (!seconds || seconds === 0) return '0秒';
+            
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            let result = '';
+            if (days > 0) result += `${days}天 `;
+            if (hours > 0) result += `${hours}小时 `;
+            if (minutes > 0) result += `${minutes}分钟 `;
+            if (secs > 0 || result === '') result += `${secs}秒`;
+            
+            return result.trim();
+        },
+        
         // 搜索处理
         handleSearch() {
             // 搜索时重置到第一页

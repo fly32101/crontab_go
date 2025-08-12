@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Element Plus CSS -->
     <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
     <!-- Element Plus Icons -->
@@ -98,26 +100,15 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-            color: white;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             padding: 24px;
             border-radius: 16px;
-            text-align: center;
             box-shadow: var(--shadow-md);
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-            pointer-events: none;
+            border: 1px solid var(--border-color);
         }
 
         .stat-card:hover {
@@ -125,16 +116,69 @@
             box-shadow: var(--shadow-lg);
         }
 
-        .stat-card:nth-child(2) {
-            background: linear-gradient(135deg, var(--success-color) 0%, #34d399 100%);
+        .stat-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
         }
 
-        .stat-card:nth-child(3) {
-            background: linear-gradient(135deg, var(--warning-color) 0%, #fbbf24 100%);
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            font-size: 24px;
         }
 
-        .stat-card:nth-child(4) {
-            background: linear-gradient(135deg, var(--info-color) 0%, #60a5fa 100%);
+        .cpu-card .stat-icon {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+
+        .memory-card .stat-icon {
+            background: linear-gradient(135deg, #10b981, #047857);
+            color: white;
+        }
+
+        .disk-card .stat-icon {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .load-card .stat-icon {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-progress {
+            margin: 16px 0;
+        }
+
+        .stat-detail {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .load-indicator {
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .load-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            border-radius: 3px;
+            transition: width 0.3s ease;
         }
 
         .stat-value {
@@ -259,6 +303,37 @@
             background: #94a3b8;
         }
 
+        /* 详细信息样式 */
+        .detail-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
         /* 响应式设计 */
         @media (max-width: 768px) {
             .container {
@@ -285,6 +360,12 @@
             .el-card__body {
                 padding: 16px;
             }
+
+            .detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
         }
     </style>
 </head>
@@ -305,66 +386,244 @@
 
             <!-- 系统监控 -->
             <div class="section">
-                <el-card>
+                <el-card shadow="hover">
                     <template #header>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="display: flex; align-items: center;">
-                                <el-icon style="margin-right: 8px; font-size: 18px; color: #67C23A;">
-                                    <DataAnalysis />
-                                </el-icon>
+                                <i class="fas fa-chart-line" style="margin-right: 8px; font-size: 18px; color: #67C23A;"></i>
                                 <span style="font-size: 16px; font-weight: 600;">系统监控</span>
+                                <el-tag size="small" style="margin-left: 10px;" type="success">实时监控</el-tag>
                             </div>
                             <el-button @click="loadSystemStats" :loading="statsLoading" type="primary" size="small">
                                 <el-icon>
-                                    <Refresh />
+                                    <RefreshRight />
                                 </el-icon>
                                 刷新
                             </el-button>
                         </div>
                     </template>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div
-                                style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-                                <el-icon style="font-size: 24px; margin-right: 8px;">
-                                    <Odometer />
-                                </el-icon>
-                                <div class="stat-value" v-text="(systemStats.CPUUsage?.toFixed(2) || 0) + '%'"></div>
+
+                    <!-- 核心指标 -->
+                    <div class="stats-grid" style="margin-bottom: 24px;">
+                        <!-- CPU 使用率卡片 -->
+                        <div class="stat-card cpu-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">
+                                    <i class="fas fa-microchip"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value" v-text="(systemStats.CPUUsage?.toFixed(1) || 0) + '%'"></div>
+                                    <div class="stat-label">CPU 使用率</div>
+                                </div>
                             </div>
-                            <div class="stat-label">CPU 使用率</div>
+                            <div class="stat-progress">
+                                <el-progress 
+                                    :percentage="systemStats.CPUUsage || 0" 
+                                    :show-text="false" 
+                                    :stroke-width="6"
+                                    :color="getCPUColor(systemStats.CPUUsage || 0)"
+                                />
+                            </div>
+                            <div class="stat-detail">
+                                <span v-text="`${systemStats.ProcessCount || 0} 个进程`"></span>
+                            </div>
                         </div>
-                        <div class="stat-card">
-                            <div
-                                style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-                                <el-icon style="font-size: 24px; margin-right: 8px;">
-                                    <MagicStick />
-                                </el-icon>
-                                <div class="stat-value" v-text="(systemStats.MemoryUsage?.toFixed(2) || 0) + '%'"></div>
+
+                        <!-- 内存使用率卡片 -->
+                        <div class="stat-card memory-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">
+                                    <i class="fas fa-memory"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value" v-text="(systemStats.MemoryUsage?.toFixed(1) || 0) + '%'"></div>
+                                    <div class="stat-label">内存使用率</div>
+                                </div>
                             </div>
-                            <div class="stat-label">内存使用率</div>
+                            <div class="stat-progress">
+                                <el-progress 
+                                    :percentage="systemStats.MemoryUsage || 0" 
+                                    :show-text="false" 
+                                    :stroke-width="6"
+                                    :color="getMemoryColor(systemStats.MemoryUsage || 0)"
+                                />
+                            </div>
+                            <div class="stat-detail">
+                                <span v-text="`${formatBytes((systemStats.MemoryUsed || 0) * 1024 * 1024)} / ${formatBytes((systemStats.MemoryTotal || 0) * 1024 * 1024)}`"></span>
+                            </div>
                         </div>
-                        <div class="stat-card">
-                            <div
-                                style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-                                <el-icon style="font-size: 24px; margin-right: 8px;">
-                                    <DataLine />
-                                </el-icon>
-                                <div class="stat-value" v-text="systemStats.SystemLoad?.toFixed(2) || 0"></div>
+
+                        <!-- 磁盘使用率卡片 -->
+                        <div class="stat-card disk-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">
+                                    <i class="fas fa-hdd"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value" v-text="(systemStats.DiskUsage?.toFixed(1) || 0) + '%'"></div>
+                                    <div class="stat-label">磁盘使用率</div>
+                                </div>
                             </div>
-                            <div class="stat-label">系统负载</div>
+                            <div class="stat-progress">
+                                <el-progress 
+                                    :percentage="systemStats.DiskUsage || 0" 
+                                    :show-text="false" 
+                                    :stroke-width="6"
+                                    :color="getDiskColor(systemStats.DiskUsage || 0)"
+                                />
+                            </div>
+                            <div class="stat-detail">
+                                <span v-text="`${systemStats.DiskUsed || 0}GB / ${systemStats.DiskTotal || 0}GB`"></span>
+                            </div>
                         </div>
-                        <div class="stat-card">
-                            <div
-                                style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-                                <el-icon style="font-size: 24px; margin-right: 8px;">
-                                    <Clock />
-                                </el-icon>
-                                <div class="stat-value" style="font-size: 1.2em;"
-                                    v-text="formatTime(systemStats.Timestamp)"></div>
+
+                        <!-- 系统负载卡片 -->
+                        <div class="stat-card load-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">
+                                    <i class="fas fa-tachometer-alt"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value" v-text="systemStats.SystemLoad?.toFixed(2) || '0.00'"></div>
+                                    <div class="stat-label">系统负载</div>
+                                </div>
                             </div>
-                            <div class="stat-label">更新时间</div>
+                            <div class="stat-progress">
+                                <div class="load-indicator">
+                                    <div class="load-bar" :style="{width: Math.min((systemStats.SystemLoad || 0) * 25, 100) + '%'}"></div>
+                                </div>
+                            </div>
+                            <div class="stat-detail">
+                                <span v-text="`运行时间: ${formatUptime(systemStats.Uptime || 0)}`"></span>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- 详细信息 -->
+                    <el-row :gutter="20">
+                        <el-col :span="12">
+                            <el-card shadow="never" style="background: #f8fafc;">
+                                <template #header>
+                                    <div style="display: flex; align-items: center;">
+                                        <el-icon style="margin-right: 6px; color: #409EFF;">
+                                            <MemoryCard />
+                                        </el-icon>
+                                        <span style="font-weight: 600;">内存详情</span>
+                                    </div>
+                                </template>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <span class="detail-label">总内存:</span>
+                                        <span class="detail-value" v-text="formatBytes(systemStats.MemoryTotal * 1024 * 1024)"></span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">已用内存:</span>
+                                        <span class="detail-value" v-text="formatBytes(systemStats.MemoryUsed * 1024 * 1024)"></span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">空闲内存:</span>
+                                        <span class="detail-value" v-text="formatBytes(systemStats.MemoryFree * 1024 * 1024)"></span>
+                                    </div>
+                                </div>
+                            </el-card>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-card shadow="never" style="background: #f8fafc;">
+                                <template #header>
+                                    <div style="display: flex; align-items: center;">
+                                        <el-icon style="margin-right: 6px; color: #67C23A;">
+                                            <HardDrive />
+                                        </el-icon>
+                                        <span style="font-weight: 600;">磁盘详情</span>
+                                    </div>
+                                </template>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <span class="detail-label">总空间:</span>
+                                        <span class="detail-value" v-text="formatBytes(systemStats.DiskTotal * 1024 * 1024 * 1024)"></span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">已用空间:</span>
+                                        <span class="detail-value" v-text="formatBytes(systemStats.DiskUsed * 1024 * 1024 * 1024)"></span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">可用空间:</span>
+                                        <span class="detail-value" v-text="formatBytes(systemStats.DiskFree * 1024 * 1024 * 1024)"></span>
+                                    </div>
+                                </div>
+                            </el-card>
+                        </el-col>
+                    </el-row>
+
+                    <!-- 系统信息 -->
+                    <el-row :gutter="20" style="margin-top: 20px;">
+                        <el-col :span="8">
+                            <el-card shadow="never" style="background: #f8fafc;">
+                                <template #header>
+                                    <div style="display: flex; align-items: center;">
+                                        <el-icon style="margin-right: 6px; color: #E6A23C;">
+                                            <Connection />
+                                        </el-icon>
+                                        <span style="font-weight: 600;">网络流量</span>
+                                    </div>
+                                </template>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <span class="detail-label">接收:</span>
+                                        <span class="detail-value" v-text="formatBytes(systemStats.NetworkRxBytes)"></span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">发送:</span>
+                                        <span class="detail-value" v-text="formatBytes(systemStats.NetworkTxBytes)"></span>
+                                    </div>
+                                </div>
+                            </el-card>
+                        </el-col>
+                        <el-col :span="8">
+                            <el-card shadow="never" style="background: #f8fafc;">
+                                <template #header>
+                                    <div style="display: flex; align-items: center;">
+                                        <el-icon style="margin-right: 6px; color: #F56C6C;">
+                                            <List />
+                                        </el-icon>
+                                        <span style="font-weight: 600;">进程信息</span>
+                                    </div>
+                                </template>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <span class="detail-label">进程数:</span>
+                                        <span class="detail-value" v-text="systemStats.ProcessCount || 0"></span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">协程数:</span>
+                                        <span class="detail-value" v-text="systemStats.GoroutineCount || 0"></span>
+                                    </div>
+                                </div>
+                            </el-card>
+                        </el-col>
+                        <el-col :span="8">
+                            <el-card shadow="never" style="background: #f8fafc;">
+                                <template #header>
+                                    <div style="display: flex; align-items: center;">
+                                        <el-icon style="margin-right: 6px; color: #909399;">
+                                            <Clock />
+                                        </el-icon>
+                                        <span style="font-weight: 600;">运行时间</span>
+                                    </div>
+                                </template>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <span class="detail-label">运行时长:</span>
+                                        <span class="detail-value" v-text="formatUptime(systemStats.Uptime)"></span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">更新时间:</span>
+                                        <span class="detail-value" v-text="formatTime(systemStats.Timestamp)"></span>
+                                    </div>
+                                </div>
+                            </el-card>
+                        </el-col>
+                    </el-row>
                 </el-card>
             </div>
 
@@ -374,9 +633,7 @@
                     <template #header>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="display: flex; align-items: center;">
-                                <el-icon style="margin-right: 8px; font-size: 18px; color: #409EFF;">
-                                    <Setting />
-                                </el-icon>
+                                <i class="fas fa-tasks" style="margin-right: 8px; font-size: 18px; color: #409EFF;"></i>
                                 <span style="font-size: 16px; font-weight: 600;">任务管理</span>
                                 <el-tag size="small" style="margin-left: 10px;"
                                     v-text="`共 ${taskPagination.total} 个任务`"></el-tag>
@@ -423,9 +680,7 @@
                         <el-table-column prop="name" label="任务名称" min-width="140" show-overflow-tooltip>
                             <template #default="scope">
                                 <div style="display: flex; align-items: center;">
-                                    <el-icon style="margin-right: 6px; color: #409EFF;">
-                                        <Operation />
-                                    </el-icon>
+                                    <i class="fas fa-cog" style="margin-right: 6px; color: #409EFF;"></i>
                                     <span v-text="scope.row.name"></span>
                                 </div>
                             </template>
@@ -433,9 +688,7 @@
                         <el-table-column prop="schedule" label="调度表达式" min-width="140" show-overflow-tooltip>
                             <template #default="scope">
                                 <div style="display: flex; align-items: center;">
-                                    <el-icon style="margin-right: 6px; color: #E6A23C;">
-                                        <AlarmClock />
-                                    </el-icon>
+                                    <i class="fas fa-clock" style="margin-right: 6px; color: #E6A23C;"></i>
                                     <el-tag size="small" type="info" v-text="scope.row.schedule"></el-tag>
                                 </div>
                             </template>
@@ -496,9 +749,7 @@
                                     执行
                                 </el-button>
                                 <el-button @click="showTaskLogs(scope.row)" size="small" style="margin-left: 4px;">
-                                    <el-icon>
-                                        <Tickets />
-                                    </el-icon>
+                                    <i class="fas fa-list-alt"></i>
                                     日志
                                 </el-button>
                                 <el-button @click="deleteTask(scope.row.id)" size="small" type="danger"
@@ -531,9 +782,7 @@
         <el-dialog v-model="showTaskDialog" width="600px">
             <template #header>
                 <div style="display: flex; align-items: center;">
-                    <el-icon style="margin-right: 8px; color: #409EFF;">
-                        <EditPen />
-                    </el-icon>
+                    <i class="fas fa-edit" style="margin-right: 8px; color: #409EFF;"></i>
                     <span v-text="editingTask ? '编辑任务' : '添加任务'"></span>
                 </div>
             </template>
@@ -541,18 +790,14 @@
                 <el-form-item label="任务名称" prop="name">
                     <el-input v-model="taskForm.name" placeholder="请输入任务名称">
                         <template #prefix>
-                            <el-icon>
-                                <Operation />
-                            </el-icon>
+                            <i class="fas fa-cog"></i>
                         </template>
                     </el-input>
                 </el-form-item>
                 <el-form-item label="调度表达式" prop="schedule">
                     <el-input v-model="taskForm.schedule" placeholder="如: 0 */5 * * * * (每5分钟执行一次)">
                         <template #prefix>
-                            <el-icon>
-                                <AlarmClock />
-                            </el-icon>
+                            <i class="fas fa-clock"></i>
                         </template>
                     </el-input>
                     <div style="font-size: 12px; color: #999; margin-top: 5px;">
@@ -565,9 +810,7 @@
                 <el-form-item label="命令/URL" prop="command">
                     <el-input v-model="taskForm.command" placeholder="系统命令或HTTP URL" @input="onCommandChange">
                         <template #prefix>
-                            <el-icon>
-                                <Terminal />
-                            </el-icon>
+                            <i class="fas fa-terminal"></i>
                         </template>
                     </el-input>
                 </el-form-item>
@@ -587,9 +830,7 @@
                 <el-form-item label="任务描述">
                     <el-input v-model="taskForm.description" type="textarea" :rows="2" placeholder="任务描述（可选）">
                         <template #prefix>
-                            <el-icon>
-                                <Document />
-                            </el-icon>
+                            <i class="fas fa-file-alt"></i>
                         </template>
                     </el-input>
                 </el-form-item>
@@ -617,9 +858,7 @@
         <el-dialog v-model="showLogsDialog" width="80%">
             <template #header>
                 <div style="display: flex; align-items: center;">
-                    <el-icon style="margin-right: 8px; color: #67C23A;">
-                        <Tickets />
-                    </el-icon>
+                    <i class="fas fa-list-alt" style="margin-right: 8px; color: #67C23A;"></i>
                     <span>任务执行日志</span>
                 </div>
             </template>
