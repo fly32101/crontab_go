@@ -10,7 +10,7 @@
       <div class="user-info">
         <a-avatar
           :size="collapsed ? 32 : 64"
-          src="https://randomuser.me/api/portraits/men/85.jpg"
+          src="http://q.qlogo.cn/headimg_dl?dst_uin=944219401&spec=640&img_type=jpg"
         />
         <div v-if="!collapsed" class="user-details">
           <div class="username">{{ userStore.user?.username || '未登录' }}</div>
