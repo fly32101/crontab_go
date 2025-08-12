@@ -21,6 +21,8 @@ web/node_modules/
 test_*.go
 debug_*.go
 check_*.go
+*test*.go
+*debug*.go
 
 # 临时文件
 *.tmp
