@@ -5,9 +5,7 @@ on:
     branches: [ main, master ]
     tags: [ 'v*' ]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+# 移除了 Docker 相关的环境变量
 
 jobs:
   build-binaries:
