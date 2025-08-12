@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+README.md
+docs/
+
+# 构建产物
+crontab_go
+crontab_go.exe
+web/dist/
+web/node_modules/
+
+# 开发文件
+.vscode/
+.idea/
+*.log
+*.db
+
+# 测试文件
+*_test.go
+test_*.go
+debug_*.go
+check_*.go
+
+# 临时文件
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Docker 相关
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# 环境文件
+.env
+.env.local
+.env.production
+
+# 数据文件
+data/
+logs/
+backup/

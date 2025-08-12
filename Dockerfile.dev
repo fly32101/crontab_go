@@ -1,0 +1,26 @@
+# 开发环境 Dockerfile
+FROM golang:1.21-alpine
+
+# 安装必要的工具
+RUN apk add --no-cache git ca-certificates tzdata sqlite nodejs npm
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+
+# 设置工作目录
+WORKDIR /app
+
+# 安装 Air（Go 热重载工具）
+RUN go install github.com/cosmtrek/air@latest
+
+# 复制 Go 模块文件
+COPY go.mod go.sum ./
+
+# 下载 Go 依赖
+RUN go mod download
+
+# 暴露端口
+EXPOSE 8080 5173
+
+# 默认命令
+CMD ["air", "-c", ".air.toml"]
