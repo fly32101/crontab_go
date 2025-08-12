@@ -66,23 +66,32 @@ func registerRoutes(engine *gin.Engine, handler *Handler) {
 			tasks.GET(":id/logs/paginated", handler.GetTaskLogsWithPagination)
 			tasks.POST(":id/execute", handler.ExecuteTask) // 执行任务需要认证
 		}
+
+		// 日志相关路由（需要认证）
+		logs := authenticated.Group("/logs")
+		{
+			logs.GET("", handler.GetAllLogs)             // 获取所有日志
+			logs.GET("/paginated", handler.GetAllLogsWithPagination) // 分页获取所有日志
+		}
 	}
 }
 
 func (s *Server) Start() {
-	// 提供前端静态文件
 	log.Println("Starting server on :8080")
-	s.engine.Static("/static", "./web/static")
-	s.engine.LoadHTMLFiles("./web/index.html")
-
-	// 添加根路由以提供前端页面
-	s.engine.GET("/", func(c *gin.Context) {
-		c.HTML(200, "index.html", nil)
-	})
 	
-	// 登录页面路由
-	s.engine.GET("/login.html", func(c *gin.Context) {
-		c.File("./web/login.html")
+	// 提供前端构建后的静态文件
+	s.engine.Static("/assets", "./web/dist/assets")
+	s.engine.StaticFile("/favicon.ico", "./web/dist/favicon.ico")
+	
+	// 对于所有非API路由，返回 index.html (SPA路由)
+	s.engine.NoRoute(func(c *gin.Context) {
+		// 如果是API请求，返回404
+		if len(c.Request.URL.Path) >= 4 && c.Request.URL.Path[:4] == "/api" {
+			c.JSON(404, gin.H{"error": "API endpoint not found"})
+			return
+		}
+		// 否则返回前端应用的入口文件
+		c.File("./web/dist/index.html")
 	})
 
 	if err := s.engine.Run(":8080"); err != nil {

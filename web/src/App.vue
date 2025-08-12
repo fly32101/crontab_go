@@ -1,92 +1,171 @@
 <template>
-  <v-app>
-    <v-navigation-drawer
-      v-model="drawer"
-      app
-      :permanent="$vuetify.display.lgAndUp"
+  <a-layout style="min-height: 100vh">
+    <a-layout-sider
+      v-model:collapsed="collapsed"
+      :trigger="null"
+      collapsible
+      :breakpoint="'lg'"
+      @breakpoint="onBreakpoint"
     >
-      <v-list>
-        <v-list-item
-          prepend-avatar="https://randomuser.me/api/portraits/men/85.jpg"
-          :title="userStore.user?.username || '未登录'"
-          :subtitle="userStore.user?.email || ''"
-        ></v-list-item>
-      </v-list>
-
-      <v-divider></v-divider>
-
-      <v-list density="compact" nav>
-        <v-list-item
-          v-for="item in menuItems"
-          :key="item.title"
-          :prepend-icon="item.icon"
-          :title="item.title"
-          :to="item.to"
-          :value="item.value"
-        ></v-list-item>
-      </v-list>
-
-      <template v-slot:append>
-        <div class="pa-2">
-          <v-btn
-            block
-            color="error"
-            @click="logout"
-            prepend-icon="mdi-logout"
-          >
-            退出登录
-          </v-btn>
+      <div class="user-info">
+        <a-avatar
+          :size="collapsed ? 32 : 64"
+          src="https://randomuser.me/api/portraits/men/85.jpg"
+        />
+        <div v-if="!collapsed" class="user-details">
+          <div class="username">{{ userStore.user?.username || '未登录' }}</div>
+          <div class="email">{{ userStore.user?.email || '' }}</div>
         </div>
-      </template>
-    </v-navigation-drawer>
+      </div>
+      
+      <a-divider style="margin: 16px 0" />
+      
+      <a-menu
+        v-model:selectedKeys="selectedKeys"
+        theme="dark"
+        mode="inline"
+        @click="handleMenuClick"
+      >
+        <a-menu-item
+          v-for="item in menuItems"
+          :key="item.value"
+        >
+          <component :is="item.icon" />
+          <span>{{ item.title }}</span>
+        </a-menu-item>
+      </a-menu>
 
-    <v-app-bar app>
-      <v-app-bar-nav-icon
-        v-if="!$vuetify.display.lgAndUp"
-        @click="drawer = !drawer"
-      ></v-app-bar-nav-icon>
+      <div class="logout-btn" :style="{ padding: collapsed ? '8px' : '16px' }">
+        <a-button
+          type="primary"
+          danger
+          :block="!collapsed"
+          @click="logout"
+        >
+          <LogoutOutlined />
+          <span v-if="!collapsed">退出登录</span>
+        </a-button>
+      </div>
+    </a-layout-sider>
 
-      <v-app-bar-title>Crontab Go 管理系统</v-app-bar-title>
+    <a-layout>
+      <a-layout-header style="background: #fff; padding: 0; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center;">
+          <a-button
+            type="text"
+            @click="collapsed = !collapsed"
+            style="margin-left: 16px;"
+          >
+            <MenuUnfoldOutlined v-if="collapsed" />
+            <MenuFoldOutlined v-else />
+          </a-button>
+          <h1 style="margin: 0 0 0 16px; font-size: 18px;">Crontab Go 管理系统</h1>
+        </div>
+        
+        <div style="margin-right: 16px;">
+          <a-button type="text" @click="toggleTheme">
+            <BulbOutlined v-if="isDark" />
+            <BulbFilled v-else />
+          </a-button>
+        </div>
+      </a-layout-header>
 
-      <v-spacer></v-spacer>
-
-      <v-btn
-        icon="mdi-theme-light-dark"
-        @click="toggleTheme"
-      ></v-btn>
-    </v-app-bar>
-
-    <v-main>
-      <router-view />
-    </v-main>
-  </v-app>
+      <a-layout-content style="margin: 24px 16px; padding: 24px; background: #fff; min-height: 280px;">
+        <router-view />
+      </a-layout-content>
+    </a-layout>
+  </a-layout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useTheme } from 'vuetify'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from './stores/user'
+import {
+  DashboardOutlined,
+  ClockCircleOutlined,
+  FileTextOutlined,
+  MonitorOutlined,
+  LogoutOutlined,
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
+  BulbOutlined,
+  BulbFilled
+} from '@ant-design/icons-vue'
 
-const theme = useTheme()
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
-const drawer = ref(false)
+const collapsed = ref(false)
+const isDark = ref(false)
+const selectedKeys = ref(['dashboard'])
 
 const menuItems = [
-  { title: '仪表板', icon: 'mdi-view-dashboard', to: '/dashboard', value: 'dashboard' },
-  { title: '任务管理', icon: 'mdi-clock-outline', to: '/tasks', value: 'tasks' },
-  { title: '执行日志', icon: 'mdi-file-document-outline', to: '/logs', value: 'logs' },
-  { title: '系统监控', icon: 'mdi-monitor', to: '/system', value: 'system' }
+  { title: '仪表板', icon: DashboardOutlined, to: '/dashboard', value: 'dashboard' },
+  { title: '任务管理', icon: ClockCircleOutlined, to: '/tasks', value: 'tasks' },
+  { title: '执行日志', icon: FileTextOutlined, to: '/logs', value: 'logs' },
+  { title: '系统监控', icon: MonitorOutlined, to: '/system', value: 'system' }
 ]
 
+const onBreakpoint = (broken) => {
+  collapsed.value = broken
+}
+
+const handleMenuClick = ({ key }) => {
+  const item = menuItems.find(item => item.value === key)
+  if (item) {
+    router.push(item.to)
+  }
+}
+
 const toggleTheme = () => {
-  theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
+  isDark.value = !isDark.value
+  // 这里可以添加主题切换逻辑
 }
 
 const logout = () => {
   userStore.logout()
   router.push('/login')
 }
+
+// 监听路由变化，更新选中的菜单项
+watch(() => route.path, (newPath) => {
+  const currentItem = menuItems.find(item => item.to === newPath)
+  if (currentItem) {
+    selectedKeys.value = [currentItem.value]
+  }
+}, { immediate: true })
 </script>
+<style scoped>
+.user-info {
+  padding: 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.user-details {
+  margin-top: 8px;
+}
+
+.username {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.email {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.logout-btn {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+}
+
+:deep(.ant-layout-sider) {
+  position: relative;
+}
+</style>

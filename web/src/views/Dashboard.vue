@@ -1,129 +1,114 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col cols="12">
-        <h1 class="text-h4 mb-4">仪表板</h1>
-      </v-col>
-    </v-row>
+  <div>
+    <h1 style="margin-bottom: 24px;">仪表板</h1>
 
-    <v-row>
-      <v-col cols="12" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6">总任务数</div>
-            <div class="text-h4 primary--text">{{ stats.totalTasks }}</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6">启用任务</div>
-            <div class="text-h4 success--text">{{ stats.enabledTasks }}</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6">今日执行</div>
-            <div class="text-h4 info--text">{{ stats.todayExecutions }}</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6">成功率</div>
-            <div class="text-h4 warning--text">{{ stats.successRate }}%</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+    <a-row :gutter="16" style="margin-bottom: 24px;">
+      <a-col :xs="24" :sm="12" :md="6">
+        <a-card>
+          <a-statistic
+            title="总任务数"
+            :value="stats.totalTasks"
+            :value-style="{ color: '#1890ff' }"
+          />
+        </a-card>
+      </a-col>
+      <a-col :xs="24" :sm="12" :md="6">
+        <a-card>
+          <a-statistic
+            title="启用任务"
+            :value="stats.enabledTasks"
+            :value-style="{ color: '#52c41a' }"
+          />
+        </a-card>
+      </a-col>
+      <a-col :xs="24" :sm="12" :md="6">
+        <a-card>
+          <a-statistic
+            title="今日执行"
+            :value="stats.todayExecutions"
+            :value-style="{ color: '#13c2c2' }"
+          />
+        </a-card>
+      </a-col>
+      <a-col :xs="24" :sm="12" :md="6">
+        <a-card>
+          <a-statistic
+            title="成功率"
+            :value="stats.successRate"
+            suffix="%"
+            :value-style="{ color: '#faad14' }"
+          />
+        </a-card>
+      </a-col>
+    </a-row>
 
-    <v-row>
-      <v-col cols="12" md="8">
-        <v-card>
-          <v-card-title>最近任务</v-card-title>
-          <v-card-text>
-            <v-data-table
-              :headers="taskHeaders"
-              :items="recentTasks"
-              :loading="loading"
-              hide-default-footer
-              density="compact"
-            >
-              <template v-slot:item.enabled="{ item }">
-                <v-chip
-                  :color="item.enabled ? 'success' : 'error'"
-                  size="small"
-                >
-                  {{ item.enabled ? '启用' : '禁用' }}
-                </v-chip>
+    <a-row :gutter="16">
+      <a-col :xs="24" :lg="16">
+        <a-card title="最近任务">
+          <a-table
+            :columns="taskColumns"
+            :data-source="recentTasks"
+            :loading="loading"
+            :pagination="false"
+            size="small"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'enabled'">
+                <a-tag :color="record.enabled ? 'success' : 'error'">
+                  {{ record.enabled ? '启用' : '禁用' }}
+                </a-tag>
               </template>
-              <template v-slot:item.actions="{ item }">
-                <v-btn
-                  icon="mdi-play"
+              <template v-else-if="column.key === 'actions'">
+                <a-button
+                  type="primary"
                   size="small"
-                  color="primary"
-                  @click="executeTask(item.id)"
-                ></v-btn>
+                  @click="executeTask(record.id)"
+                >
+                  <PlayCircleOutlined />
+                </a-button>
               </template>
-            </v-data-table>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" md="4">
-        <v-card>
-          <v-card-title>系统状态</v-card-title>
-          <v-card-text>
-            <div v-if="systemStats">
-              <div class="mb-2">
-                <div class="text-subtitle2">CPU 使用率</div>
-                <v-progress-linear
-                  :model-value="systemStats.CPUUsage"
-                  color="primary"
-                  height="20"
-                >
-                  <template v-slot:default="{ value }">
-                    <strong>{{ Math.ceil(value) }}%</strong>
-                  </template>
-                </v-progress-linear>
-              </div>
-              <div class="mb-2">
-                <div class="text-subtitle2">内存使用率</div>
-                <v-progress-linear
-                  :model-value="systemStats.MemoryUsage"
-                  color="success"
-                  height="20"
-                >
-                  <template v-slot:default="{ value }">
-                    <strong>{{ Math.ceil(value) }}%</strong>
-                  </template>
-                </v-progress-linear>
-              </div>
-              <div class="mb-2">
-                <div class="text-subtitle2">磁盘使用率</div>
-                <v-progress-linear
-                  :model-value="systemStats.DiskUsage"
-                  color="warning"
-                  height="20"
-                >
-                  <template v-slot:default="{ value }">
-                    <strong>{{ Math.ceil(value) }}%</strong>
-                  </template>
-                </v-progress-linear>
-              </div>
+            </template>
+          </a-table>
+        </a-card>
+      </a-col>
+      <a-col :xs="24" :lg="8">
+        <a-card title="系统状态">
+          <div v-if="systemStats">
+            <div style="margin-bottom: 16px;">
+              <div style="margin-bottom: 8px;">CPU 使用率</div>
+              <a-progress
+                :percent="systemStats.CPUUsage"
+                :show-info="true"
+                stroke-color="#1890ff"
+              />
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+            <div style="margin-bottom: 16px;">
+              <div style="margin-bottom: 8px;">内存使用率</div>
+              <a-progress
+                :percent="systemStats.MemoryUsage"
+                :show-info="true"
+                stroke-color="#52c41a"
+              />
+            </div>
+            <div>
+              <div style="margin-bottom: 8px;">磁盘使用率</div>
+              <a-progress
+                :percent="systemStats.DiskUsage"
+                :show-info="true"
+                stroke-color="#faad14"
+              />
+            </div>
+          </div>
+        </a-card>
+      </a-col>
+    </a-row>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { PlayCircleOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
 import api from '../services/api'
 
 const loading = ref(false)
@@ -136,11 +121,11 @@ const stats = ref({
 const recentTasks = ref([])
 const systemStats = ref(null)
 
-const taskHeaders = [
-  { title: '任务名称', key: 'name' },
-  { title: '计划', key: 'schedule' },
-  { title: '状态', key: 'enabled' },
-  { title: '操作', key: 'actions', sortable: false }
+const taskColumns = [
+  { title: '任务名称', dataIndex: 'name', key: 'name' },
+  { title: '计划', dataIndex: 'schedule', key: 'schedule' },
+  { title: '状态', dataIndex: 'enabled', key: 'enabled' },
+  { title: '操作', key: 'actions' }
 ]
 
 const fetchDashboardData = async () => {
@@ -163,6 +148,7 @@ const fetchDashboardData = async () => {
     stats.value.successRate = Math.floor(Math.random() * 20 + 80)
   } catch (error) {
     console.error('获取仪表板数据失败:', error)
+    message.error('获取仪表板数据失败')
   } finally {
     loading.value = false
   }
@@ -171,9 +157,10 @@ const fetchDashboardData = async () => {
 const executeTask = async (taskId) => {
   try {
     await api.post(`/tasks/${taskId}/execute`)
-    // 可以添加成功提示
+    message.success('任务执行成功')
   } catch (error) {
     console.error('执行任务失败:', error)
+    message.error('任务执行失败')
   }
 }
 

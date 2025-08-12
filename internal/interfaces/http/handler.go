@@ -265,3 +265,34 @@ func (h *Handler) ExecuteTask(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Task executed successfully"})
 }
+
+// GetAllLogs 获取所有任务执行日志
+func (h *Handler) GetAllLogs(c *gin.Context) {
+	logs, err := h.taskService.GetAllLogs()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, logs)
+}
+
+// GetAllLogsWithPagination 分页获取所有任务执行日志
+func (h *Handler) GetAllLogsWithPagination(c *gin.Context) {
+	var req entity.PaginationRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// 设置默认值
+	paginationReq := entity.NewPaginationRequest(req.Page, req.PageSize)
+
+	response, err := h.taskService.GetAllLogsWithPagination(paginationReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}

@@ -1,146 +1,150 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col cols="12">
-        <h1 class="text-h4 mb-4">执行日志</h1>
-      </v-col>
-    </v-row>
+  <div>
+    <h1 style="margin-bottom: 24px;">执行日志</h1>
 
-    <v-row>
-      <v-col cols="12">
-        <v-card>
-          <v-card-title>
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="selectedTask"
-                  :items="tasks"
-                  item-title="name"
-                  item-value="id"
-                  label="选择任务"
-                  clearable
-                  @update:model-value="fetchLogs"
-                ></v-select>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="statusFilter"
-                  :items="statusOptions"
-                  label="执行状态"
-                  clearable
-                  @update:model-value="fetchLogs"
-                ></v-select>
-              </v-col>
-            </v-row>
-          </v-card-title>
-          
-          <v-data-table
-            :headers="headers"
-            :items="logs"
-            :loading="loading"
-            :page="page"
-            :items-per-page="itemsPerPage"
-            :server-items-length="totalItems"
-            @update:page="handlePageChange"
-            @update:items-per-page="handleItemsPerPageChange"
-          >
-            <template v-slot:item.Success="{ item }">
-              <v-chip
-                :color="item.Success ? 'success' : 'error'"
-                size="small"
+    <a-card>
+      <template #title>
+        <a-row :gutter="16">
+          <a-col :xs="24" :md="12">
+            <a-select
+              v-model:value="selectedTask"
+              placeholder="选择任务"
+              allow-clear
+              style="width: 100%"
+              @change="fetchLogs"
+            >
+              <a-select-option
+                v-for="task in tasks"
+                :key="task.id"
+                :value="task.id"
               >
-                {{ item.Success ? '成功' : '失败' }}
-              </v-chip>
-            </template>
-            
-            <template v-slot:item.StartTime="{ item }">
-              {{ formatDateTime(item.StartTime) }}
-            </template>
-            
-            <template v-slot:item.EndTime="{ item }">
-              {{ formatDateTime(item.EndTime) }}
-            </template>
-            
-            <template v-slot:item.duration="{ item }">
-              {{ calculateDuration(item.StartTime, item.EndTime) }}
-            </template>
-            
-            <template v-slot:item.actions="{ item }">
-              <v-btn
-                icon="mdi-eye"
-                size="small"
-                color="primary"
-                @click="viewLogDetail(item)"
-              ></v-btn>
-            </template>
-          </v-data-table>
-        </v-card>
-      </v-col>
-    </v-row>
+                {{ task.name }}
+              </a-select-option>
+            </a-select>
+          </a-col>
+          <a-col :xs="24" :md="12">
+            <a-select
+              v-model:value="statusFilter"
+              placeholder="执行状态"
+              allow-clear
+              style="width: 100%"
+              @change="fetchLogs"
+            >
+              <a-select-option
+                v-for="option in statusOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.title }}
+              </a-select-option>
+            </a-select>
+          </a-col>
+        </a-row>
+      </template>
+      
+      <a-table
+        :columns="columns"
+        :data-source="logs"
+        :loading="loading"
+        :pagination="{
+          current: page,
+          pageSize: itemsPerPage,
+          total: totalItems,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
+        }"
+        @change="handleTableChange"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'Success'">
+            <a-tag :color="record.Success ? 'success' : 'error'">
+              {{ record.Success ? '成功' : '失败' }}
+            </a-tag>
+          </template>
+          <template v-else-if="column.key === 'StartTime'">
+            {{ formatDateTime(record.StartTime) }}
+          </template>
+          <template v-else-if="column.key === 'EndTime'">
+            {{ formatDateTime(record.EndTime) }}
+          </template>
+          <template v-else-if="column.key === 'duration'">
+            {{ calculateDuration(record.StartTime, record.EndTime) }}
+          </template>
+          <template v-else-if="column.key === 'actions'">
+            <a-button
+              type="primary"
+              size="small"
+              @click="viewLogDetail(record)"
+            >
+              <EyeOutlined />
+            </a-button>
+          </template>
+        </template>
+      </a-table>
+    </a-card>
 
     <!-- 日志详情对话框 -->
-    <v-dialog v-model="logDetailDialog" max-width="800px">
-      <v-card v-if="selectedLog">
-        <v-card-title>
-          执行日志详情 - {{ selectedLog.TaskName }}
-        </v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="6">
-              <strong>任务ID:</strong> {{ selectedLog.TaskID }}
-            </v-col>
-            <v-col cols="6">
-              <strong>执行状态:</strong>
-              <v-chip
-                :color="selectedLog.Success ? 'success' : 'error'"
-                size="small"
-                class="ml-2"
-              >
-                {{ selectedLog.Success ? '成功' : '失败' }}
-              </v-chip>
-            </v-col>
-            <v-col cols="6">
-              <strong>开始时间:</strong> {{ formatDateTime(selectedLog.StartTime) }}
-            </v-col>
-            <v-col cols="6">
-              <strong>结束时间:</strong> {{ formatDateTime(selectedLog.EndTime) }}
-            </v-col>
-            <v-col cols="6">
-              <strong>执行时长:</strong> {{ calculateDuration(selectedLog.StartTime, selectedLog.EndTime) }}
-            </v-col>
-          </v-row>
-          
-          <v-divider class="my-4"></v-divider>
-          
-          <div v-if="selectedLog.Output">
-            <strong>执行输出:</strong>
-            <v-card class="mt-2" variant="outlined">
-              <v-card-text>
-                <pre class="text-body-2">{{ selectedLog.Output }}</pre>
-              </v-card-text>
-            </v-card>
-          </div>
-          
-          <div v-if="selectedLog.Error" class="mt-4">
-            <strong>错误信息:</strong>
-            <v-card class="mt-2" variant="outlined" color="error">
-              <v-card-text>
-                <pre class="text-body-2">{{ selectedLog.Error }}</pre>
-              </v-card-text>
-            </v-card>
-          </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn @click="logDetailDialog = false">关闭</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </v-container>
+    <a-modal
+      v-model:open="logDetailDialog"
+      title="执行日志详情"
+      width="800px"
+      :footer="null"
+    >
+      <div v-if="selectedLog">
+        <h3>{{ selectedLog.TaskName }}</h3>
+        
+        <a-descriptions :column="2" bordered style="margin: 16px 0;">
+          <a-descriptions-item label="任务ID">
+            {{ selectedLog.TaskID }}
+          </a-descriptions-item>
+          <a-descriptions-item label="执行状态">
+            <a-tag :color="selectedLog.Success ? 'success' : 'error'">
+              {{ selectedLog.Success ? '成功' : '失败' }}
+            </a-tag>
+          </a-descriptions-item>
+          <a-descriptions-item label="开始时间">
+            {{ formatDateTime(selectedLog.StartTime) }}
+          </a-descriptions-item>
+          <a-descriptions-item label="结束时间">
+            {{ formatDateTime(selectedLog.EndTime) }}
+          </a-descriptions-item>
+          <a-descriptions-item label="执行时长" :span="2">
+            {{ calculateDuration(selectedLog.StartTime, selectedLog.EndTime) }}
+          </a-descriptions-item>
+        </a-descriptions>
+        
+        <div v-if="selectedLog.Output" style="margin-bottom: 16px;">
+          <h4>执行输出:</h4>
+          <a-card size="small">
+            <pre style="white-space: pre-wrap; word-break: break-word; margin: 0;">{{ selectedLog.Output }}</pre>
+          </a-card>
+        </div>
+        
+        <div v-if="selectedLog.Error">
+          <h4>错误信息:</h4>
+          <a-alert
+            type="error"
+            show-icon
+          >
+            <template #message>
+              <pre style="white-space: pre-wrap; word-break: break-word; margin: 0;">{{ selectedLog.Error }}</pre>
+            </template>
+          </a-alert>
+        </div>
+        
+        <div style="text-align: right; margin-top: 16px;">
+          <a-button @click="logDetailDialog = false">关闭</a-button>
+        </div>
+      </div>
+    </a-modal>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { EyeOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
 import api from '../services/api'
 
 const loading = ref(false)
@@ -155,14 +159,14 @@ const totalItems = ref(0)
 const logDetailDialog = ref(false)
 const selectedLog = ref(null)
 
-const headers = [
-  { title: 'ID', key: 'ID', width: '80px' },
-  { title: '任务名称', key: 'TaskName' },
+const columns = [
+  { title: 'ID', dataIndex: 'ID', key: 'ID', width: 80 },
+  { title: '任务名称', dataIndex: 'TaskName', key: 'TaskName' },
   { title: '开始时间', key: 'StartTime' },
   { title: '结束时间', key: 'EndTime' },
   { title: '执行时长', key: 'duration' },
-  { title: '状态', key: 'Success', width: '100px' },
-  { title: '操作', key: 'actions', sortable: false, width: '80px' }
+  { title: '状态', key: 'Success', width: 100 },
+  { title: '操作', key: 'actions', width: 80 }
 ]
 
 const statusOptions = [
@@ -176,6 +180,7 @@ const fetchTasks = async () => {
     tasks.value = response.data
   } catch (error) {
     console.error('获取任务列表失败:', error)
+    message.error('获取任务列表失败')
   }
 }
 
@@ -212,20 +217,16 @@ const fetchLogs = async () => {
     }
   } catch (error) {
     console.error('获取日志失败:', error)
+    message.error('获取日志失败')
     logs.value = []
   } finally {
     loading.value = false
   }
 }
 
-const handlePageChange = (newPage) => {
-  page.value = newPage
-  fetchLogs()
-}
-
-const handleItemsPerPageChange = (newItemsPerPage) => {
-  itemsPerPage.value = newItemsPerPage
-  page.value = 1
+const handleTableChange = (pagination) => {
+  page.value = pagination.current
+  itemsPerPage.value = pagination.pageSize
   fetchLogs()
 }
 
@@ -259,10 +260,3 @@ onMounted(() => {
   fetchLogs()
 })
 </script>
-
-<style scoped>
-pre {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-</style>

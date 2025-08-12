@@ -1,166 +1,152 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col cols="12">
-        <h1 class="text-h4 mb-4">系统监控</h1>
-      </v-col>
-    </v-row>
+  <div>
+    <h1 style="margin-bottom: 24px;">系统监控</h1>
 
-    <v-row v-if="systemStats">
-      <v-col cols="12" md="6">
-        <v-card>
-          <v-card-title>CPU 使用率</v-card-title>
-          <v-card-text>
-            <div class="text-h3 mb-2">{{ systemStats.CPUUsage.toFixed(1) }}%</div>
-            <v-progress-linear
-              :model-value="systemStats.CPUUsage"
-              color="primary"
-              height="20"
-            ></v-progress-linear>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" md="6">
-        <v-card>
-          <v-card-title>内存使用</v-card-title>
-          <v-card-text>
-            <div class="text-h3 mb-2">{{ systemStats.MemoryUsage.toFixed(1) }}%</div>
-            <v-progress-linear
-              :model-value="systemStats.MemoryUsage"
-              color="success"
-              height="20"
-            ></v-progress-linear>
-            <div class="text-caption mt-2">
+    <div v-if="systemStats">
+      <a-row :gutter="16" style="margin-bottom: 24px;">
+        <a-col :xs="24" :md="12">
+          <a-card title="CPU 使用率">
+            <div style="font-size: 32px; font-weight: bold; margin-bottom: 16px; color: #1890ff;">
+              {{ systemStats.CPUUsage.toFixed(1) }}%
+            </div>
+            <a-progress
+              :percent="systemStats.CPUUsage"
+              stroke-color="#1890ff"
+              :show-info="false"
+            />
+          </a-card>
+        </a-col>
+        
+        <a-col :xs="24" :md="12">
+          <a-card title="内存使用">
+            <div style="font-size: 32px; font-weight: bold; margin-bottom: 16px; color: #52c41a;">
+              {{ systemStats.MemoryUsage.toFixed(1) }}%
+            </div>
+            <a-progress
+              :percent="systemStats.MemoryUsage"
+              stroke-color="#52c41a"
+              :show-info="false"
+            />
+            <div style="margin-top: 8px; color: #666; font-size: 12px;">
               已用: {{ formatBytes(systemStats.MemoryUsed * 1024 * 1024) }} / 
               总计: {{ formatBytes(systemStats.MemoryTotal * 1024 * 1024) }}
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" md="6">
-        <v-card>
-          <v-card-title>磁盘使用</v-card-title>
-          <v-card-text>
-            <div class="text-h3 mb-2">{{ systemStats.DiskUsage.toFixed(1) }}%</div>
-            <v-progress-linear
-              :model-value="systemStats.DiskUsage"
-              color="warning"
-              height="20"
-            ></v-progress-linear>
-            <div class="text-caption mt-2">
+          </a-card>
+        </a-col>
+        
+        <a-col :xs="24" :md="12">
+          <a-card title="磁盘使用">
+            <div style="font-size: 32px; font-weight: bold; margin-bottom: 16px; color: #faad14;">
+              {{ systemStats.DiskUsage.toFixed(1) }}%
+            </div>
+            <a-progress
+              :percent="systemStats.DiskUsage"
+              stroke-color="#faad14"
+              :show-info="false"
+            />
+            <div style="margin-top: 8px; color: #666; font-size: 12px;">
               已用: {{ formatBytes(systemStats.DiskUsed * 1024 * 1024 * 1024) }} / 
               总计: {{ formatBytes(systemStats.DiskTotal * 1024 * 1024 * 1024) }}
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" md="6">
-        <v-card>
-          <v-card-title>系统负载</v-card-title>
-          <v-card-text>
-            <div class="text-h3 mb-2">{{ systemStats.SystemLoad.toFixed(2) }}</div>
-            <v-progress-linear
-              :model-value="Math.min(systemStats.SystemLoad * 25, 100)"
-              color="info"
-              height="20"
-            ></v-progress-linear>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+          </a-card>
+        </a-col>
+        
+        <a-col :xs="24" :md="12">
+          <a-card title="系统负载">
+            <div style="font-size: 32px; font-weight: bold; margin-bottom: 16px; color: #13c2c2;">
+              {{ systemStats.SystemLoad.toFixed(2) }}
+            </div>
+            <a-progress
+              :percent="Math.min(systemStats.SystemLoad * 25, 100)"
+              stroke-color="#13c2c2"
+              :show-info="false"
+            />
+          </a-card>
+        </a-col>
+      </a-row>
 
-    <v-row v-if="systemStats">
-      <v-col cols="12" md="4">
-        <v-card>
-          <v-card-title>网络流量</v-card-title>
-          <v-card-text>
-            <div class="mb-2">
-              <div class="text-subtitle2">接收</div>
-              <div class="text-h6">{{ formatBytes(systemStats.NetworkRxBytes) }}</div>
+      <a-row :gutter="16" style="margin-bottom: 24px;">
+        <a-col :xs="24" :md="8">
+          <a-card title="网络流量">
+            <div style="margin-bottom: 16px;">
+              <div style="color: #666; margin-bottom: 4px;">接收</div>
+              <div style="font-size: 18px; font-weight: 500;">{{ formatBytes(systemStats.NetworkRxBytes) }}</div>
             </div>
             <div>
-              <div class="text-subtitle2">发送</div>
-              <div class="text-h6">{{ formatBytes(systemStats.NetworkTxBytes) }}</div>
+              <div style="color: #666; margin-bottom: 4px;">发送</div>
+              <div style="font-size: 18px; font-weight: 500;">{{ formatBytes(systemStats.NetworkTxBytes) }}</div>
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" md="4">
-        <v-card>
-          <v-card-title>进程信息</v-card-title>
-          <v-card-text>
-            <div class="mb-2">
-              <div class="text-subtitle2">进程数</div>
-              <div class="text-h6">{{ systemStats.ProcessCount }}</div>
+          </a-card>
+        </a-col>
+        
+        <a-col :xs="24" :md="8">
+          <a-card title="进程信息">
+            <div style="margin-bottom: 16px;">
+              <div style="color: #666; margin-bottom: 4px;">进程数</div>
+              <div style="font-size: 18px; font-weight: 500;">{{ systemStats.ProcessCount }}</div>
             </div>
             <div>
-              <div class="text-subtitle2">协程数</div>
-              <div class="text-h6">{{ systemStats.GoroutineCount }}</div>
+              <div style="color: #666; margin-bottom: 4px;">协程数</div>
+              <div style="font-size: 18px; font-weight: 500;">{{ systemStats.GoroutineCount }}</div>
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" md="4">
-        <v-card>
-          <v-card-title>运行时间</v-card-title>
-          <v-card-text>
-            <div class="text-h6">{{ formatUptime(systemStats.Uptime) }}</div>
-            <div class="text-caption">
+          </a-card>
+        </a-col>
+        
+        <a-col :xs="24" :md="8">
+          <a-card title="运行时间">
+            <div style="font-size: 18px; font-weight: 500; margin-bottom: 8px;">
+              {{ formatUptime(systemStats.Uptime) }}
+            </div>
+            <div style="color: #666; font-size: 12px;">
               更新时间: {{ formatDateTime(systemStats.Timestamp) }}
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+          </a-card>
+        </a-col>
+      </a-row>
+    </div>
 
-    <v-row>
-      <v-col cols="12">
-        <v-card>
-          <v-card-title>
-            <div class="d-flex justify-space-between align-center">
-              <span>系统状态历史</span>
-              <v-btn
-                icon="mdi-refresh"
-                @click="fetchSystemStats"
-                :loading="loading"
-              ></v-btn>
-            </div>
-          </v-card-title>
-          <v-card-text>
-            <div class="text-center" v-if="loading">
-              <v-progress-circular indeterminate></v-progress-circular>
-            </div>
-            <div v-else-if="!systemStats" class="text-center text-grey">
-              暂无数据
-            </div>
-            <div v-else>
-              <v-alert
-                type="info"
-                variant="tonal"
-                class="mb-4"
-              >
-                系统监控数据每30秒自动刷新一次
-              </v-alert>
-              
-              <!-- 这里可以添加图表组件来显示历史数据 -->
-              <div class="text-center text-grey">
-                历史趋势图表功能待开发
-              </div>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+    <a-card>
+      <template #title>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>系统状态历史</span>
+          <a-button
+            type="primary"
+            @click="fetchSystemStats"
+            :loading="loading"
+          >
+            <ReloadOutlined />
+            刷新
+          </a-button>
+        </div>
+      </template>
+      
+      <div v-if="loading" style="text-align: center; padding: 40px;">
+        <a-spin size="large" />
+      </div>
+      <div v-else-if="!systemStats" style="text-align: center; color: #999; padding: 40px;">
+        暂无数据
+      </div>
+      <div v-else>
+        <a-alert
+          type="info"
+          message="系统监控数据每30秒自动刷新一次"
+          style="margin-bottom: 16px;"
+          show-icon
+        />
+        
+        <!-- 这里可以添加图表组件来显示历史数据 -->
+        <div style="text-align: center; color: #999; padding: 40px;">
+          历史趋势图表功能待开发
+        </div>
+      </div>
+    </a-card>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { ReloadOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
 import api from '../services/api'
 
 const loading = ref(false)
@@ -174,6 +160,7 @@ const fetchSystemStats = async () => {
     systemStats.value = response.data
   } catch (error) {
     console.error('获取系统状态失败:', error)
+    message.error('获取系统状态失败')
   } finally {
     loading.value = false
   }
