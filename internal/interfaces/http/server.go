@@ -30,24 +30,42 @@ func NewServer(db *gorm.DB) *Server {
 }
 
 func registerRoutes(engine *gin.Engine, handler *Handler) {
-	// 任务相关路由
-	tasks := engine.Group("/api/v1/tasks")
+	api := engine.Group("/api/v1")
+	
+	// 认证相关路由（无需认证）
+	auth := api.Group("/auth")
 	{
-		tasks.POST("", handler.CreateTask)
-		tasks.GET("", handler.ListTasks)
-		tasks.GET("/paginated", handler.ListTasksWithPagination) // 分页接口
-		tasks.GET(":id", handler.GetTask)
-		tasks.PUT(":id", handler.UpdateTask)
-		tasks.DELETE(":id", handler.DeleteTask)
-		tasks.GET(":id/logs", handler.GetTaskLogs)
-		tasks.GET(":id/logs/paginated", handler.GetTaskLogsWithPagination) // 分页日志接口
-		tasks.POST(":id/execute", handler.ExecuteTask)
+		auth.POST("/login", handler.Login)
+		auth.POST("/register", handler.Register)
 	}
 
-	// 系统监控路由
-	system := engine.Group("/api/v1/system")
+	// 系统监控路由（无需认证，只读）
+	system := api.Group("/system")
 	{
 		system.GET("/stats", handler.GetSystemStats)
+	}
+
+	// 需要认证的路由
+	authMiddleware := AuthMiddleware(handler.authService)
+	authenticated := api.Group("")
+	authenticated.Use(authMiddleware)
+	{
+		// 用户信息
+		authenticated.GET("/user", handler.GetCurrentUser)
+		
+		// 任务相关路由（需要认证）
+		tasks := authenticated.Group("/tasks")
+		{
+			tasks.POST("", handler.CreateTask)           // 创建任务需要认证
+			tasks.GET("", handler.ListTasks)             // 查看任务需要认证
+			tasks.GET("/paginated", handler.ListTasksWithPagination)
+			tasks.GET(":id", handler.GetTask)
+			tasks.PUT(":id", handler.UpdateTask)         // 更新任务需要认证
+			tasks.DELETE(":id", handler.DeleteTask)      // 删除任务需要认证
+			tasks.GET(":id/logs", handler.GetTaskLogs)
+			tasks.GET(":id/logs/paginated", handler.GetTaskLogsWithPagination)
+			tasks.POST(":id/execute", handler.ExecuteTask) // 执行任务需要认证
+		}
 	}
 }
 
@@ -60,6 +78,11 @@ func (s *Server) Start() {
 	// 添加根路由以提供前端页面
 	s.engine.GET("/", func(c *gin.Context) {
 		c.HTML(200, "index.html", nil)
+	})
+	
+	// 登录页面路由
+	s.engine.GET("/login.html", func(c *gin.Context) {
+		c.File("./web/login.html")
 	})
 
 	if err := s.engine.Run(":8080"); err != nil {

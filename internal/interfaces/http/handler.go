@@ -1,6 +1,7 @@
 package http
 
 import (
+	"crontab_go/internal/application/auth"
 	"crontab_go/internal/application/task"
 	"crontab_go/internal/application/system"
 	"crontab_go/internal/domain/entity"
@@ -31,6 +32,7 @@ func CORSMiddleware() gin.HandlerFunc {
 type Handler struct {
 	taskService   *task.Service
 	systemService *system.Service
+	authService   *auth.Service
 }
 
 func NewHandler(db *gorm.DB) *Handler {
@@ -41,9 +43,13 @@ func NewHandler(db *gorm.DB) *Handler {
 	systemRepo := persistence.NewSystemRepository(db)
 	systemService := system.NewService(systemRepo)
 
+	userRepo := persistence.NewUserRepository(db)
+	authService := auth.NewService(userRepo)
+
 	return &Handler{
 		taskService:   taskService,
 		systemService: systemService,
+		authService:   authService,
 	}
 }
 
@@ -197,6 +203,51 @@ func (h *Handler) GetSystemStats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, stats)
+}
+
+// Login 用户登录
+func (h *Handler) Login(c *gin.Context) {
+	var req entity.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	response, err := h.authService.Login(&req)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// Register 用户注册
+func (h *Handler) Register(c *gin.Context) {
+	var req entity.RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := h.authService.Register(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "注册成功", "user": user})
+}
+
+// GetCurrentUser 获取当前用户信息
+func (h *Handler) GetCurrentUser(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未认证"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }
 
 // ExecuteTask 立即执行任务

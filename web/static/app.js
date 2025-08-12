@@ -21,6 +21,10 @@ const app = createApp({
             searchKeyword: '',
             statusFilter: '',
             
+            // 用户信息
+            currentUser: null,
+            token: null,
+            
             // 任务表单
             showTaskDialog: false,
             editingTask: null,
@@ -93,6 +97,9 @@ const app = createApp({
     },
     
     mounted() {
+        // 检查登录状态
+        this.checkAuth();
+        
         this.loadSystemStats();
         this.loadTasks();
         
@@ -125,7 +132,13 @@ const app = createApp({
         async loadTasks() {
             this.tasksLoading = true;
             try {
-                const response = await fetch(`/api/v1/tasks/paginated?page=${this.taskPagination.page}&page_size=${this.taskPagination.pageSize}`);
+                const response = await fetch(`/api/v1/tasks/paginated?page=${this.taskPagination.page}&page_size=${this.taskPagination.pageSize}`, {
+                    headers: this.getAuthHeaders()
+                });
+                if (response.status === 401) {
+                    this.logout();
+                    return;
+                }
                 if (response.ok) {
                     const data = await response.json();
                     this.tasks = data.data || [];
@@ -181,9 +194,7 @@ const app = createApp({
                 
                 const response = await fetch(url, {
                     method: method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: this.getAuthHeaders(),
                     body: JSON.stringify({
                         Name: this.taskForm.name,
                         Schedule: this.taskForm.schedule,
@@ -222,7 +233,8 @@ const app = createApp({
                 });
                 
                 const response = await fetch(`/api/v1/tasks/${id}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: this.getAuthHeaders()
                 });
                 
                 if (response.ok) {
@@ -245,9 +257,7 @@ const app = createApp({
                 const newStatus = !task.enabled;
                 const response = await fetch(`/api/v1/tasks/${task.id}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: this.getAuthHeaders(),
                     body: JSON.stringify({
                         Name: task.name,
                         Schedule: task.schedule,
@@ -275,7 +285,8 @@ const app = createApp({
         async executeTask(id) {
             try {
                 const response = await fetch(`/api/v1/tasks/${id}/execute`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: this.getAuthHeaders()
                 });
                 
                 if (response.ok) {
@@ -304,7 +315,9 @@ const app = createApp({
             
             this.logsLoading = true;
             try {
-                const response = await fetch(`/api/v1/tasks/${this.currentLogTaskId}/logs/paginated?page=${this.logPagination.page}&page_size=${this.logPagination.pageSize}`);
+                const response = await fetch(`/api/v1/tasks/${this.currentLogTaskId}/logs/paginated?page=${this.logPagination.page}&page_size=${this.logPagination.pageSize}`, {
+                    headers: this.getAuthHeaders()
+                });
                 if (response.ok) {
                     const data = await response.json();
                     this.taskLogs = data.data || [];
@@ -407,6 +420,36 @@ const app = createApp({
             if (percentage < 70) return '#10b981';
             if (percentage < 90) return '#f59e0b';
             return '#ef4444';
+        },
+        
+        // 检查认证状态
+        checkAuth() {
+            this.token = localStorage.getItem('token');
+            const userStr = localStorage.getItem('user');
+            
+            if (!this.token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            if (userStr) {
+                this.currentUser = JSON.parse(userStr);
+            }
+        },
+        
+        // 获取认证头
+        getAuthHeaders() {
+            return {
+                'Authorization': `Bearer ${this.token}`,
+                'Content-Type': 'application/json'
+            };
+        },
+        
+        // 登出
+        logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
         },
 
         // 格式化字节数

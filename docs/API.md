@@ -4,9 +4,103 @@
 
 Crontab Go 是一个基于 Go 语言的定时任务管理系统，提供 RESTful API 用于管理定时任务和监控系统状态。
 
+## 认证
+
+大部分API接口需要JWT认证。在请求头中添加：
+```
+Authorization: Bearer <your-jwt-token>
+```
+
 ## API 端点
 
+### 认证 API
+
+#### 用户登录
+
+- **URL**: `POST /api/v1/auth/login`
+- **描述**: 用户登录获取JWT token
+- **请求体**:
+  ```json
+  {
+    "username": "admin",
+    "password": "admin123"
+  }
+  ```
+- **响应**:
+  ```json
+  {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "role": "admin",
+      "is_active": true,
+      "created_at": "2023-01-01T12:00:00Z",
+      "updated_at": "2023-01-01T12:00:00Z"
+    }
+  }
+  ```
+- **状态码**:
+  - 200: 登录成功
+  - 401: 用户名或密码错误
+  - 400: 请求参数错误
+
+#### 用户注册
+
+- **URL**: `POST /api/v1/auth/register`
+- **描述**: 用户注册
+- **请求体**:
+  ```json
+  {
+    "username": "newuser",
+    "password": "password123",
+    "email": "user@example.com"
+  }
+  ```
+- **响应**:
+  ```json
+  {
+    "message": "注册成功",
+    "user": {
+      "id": 2,
+      "username": "newuser",
+      "email": "user@example.com",
+      "role": "user",
+      "is_active": true,
+      "created_at": "2023-01-01T12:00:00Z",
+      "updated_at": "2023-01-01T12:00:00Z"
+    }
+  }
+  ```
+- **状态码**:
+  - 200: 注册成功
+  - 400: 请求参数错误或用户名已存在
+
+#### 获取当前用户信息
+
+- **URL**: `GET /api/v1/user`
+- **描述**: 获取当前登录用户的信息
+- **认证**: 需要JWT token
+- **响应**:
+  ```json
+  {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "role": "admin",
+    "is_active": true,
+    "created_at": "2023-01-01T12:00:00Z",
+    "updated_at": "2023-01-01T12:00:00Z"
+  }
+  ```
+- **状态码**:
+  - 200: 成功
+  - 401: 未认证
+
 ### 任务管理 API
+
+**注意**: 所有任务管理API都需要JWT认证。
 
 所有任务相关的 API 都在 `/api/v1/tasks` 路径下。
 

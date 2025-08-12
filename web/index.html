@@ -373,8 +373,22 @@
 <body>
     <div id="app">
         <div class="header">
-            <h1>定时任务管理系统</h1>
-            <p>基于 Go 语言的定时任务管理平台</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 1400px; margin: 0 auto;">
+                <div>
+                    <h1>定时任务管理系统</h1>
+                    <p>基于 Go 语言的定时任务管理平台</p>
+                </div>
+                <div v-if="currentUser" style="display: flex; align-items: center; gap: 16px;">
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.875rem; opacity: 0.9;">欢迎回来</div>
+                        <div style="font-weight: 600;" v-text="currentUser.username"></div>
+                    </div>
+                    <el-button @click="logout" size="small" type="info" plain>
+                        <i class="fas fa-sign-out-alt" style="margin-right: 4px;"></i>
+                        登出
+                    </el-button>
+                </div>
+            </div>
         </div>
 
         <div class="container">
