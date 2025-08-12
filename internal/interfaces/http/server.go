@@ -79,6 +79,17 @@ func registerRoutes(engine *gin.Engine, handler *Handler) {
 		{
 			notifications.POST("/test", handler.TestNotification) // 测试通知
 		}
+
+		// 统计相关路由（需要认证）
+		stats := authenticated.Group("/statistics")
+		{
+			stats.GET("/tasks", handler.GetTaskStatistics)                    // 获取任务统计
+			stats.GET("/tasks/:id", handler.GetTaskStatisticsByID)           // 获取特定任务统计
+			stats.GET("/trends", handler.GetExecutionTrends)                 // 获取执行趋势
+			stats.GET("/report", handler.GetTaskExecutionReport)             // 获取执行报表
+			stats.GET("/performance", handler.GetTaskPerformanceMetrics)     // 获取性能指标
+			stats.GET("/hourly", handler.GetHourlyExecutionStats)            // 获取小时统计
+		}
 	}
 }
 

@@ -2,6 +2,7 @@ package http
 
 import (
 	"crontab_go/internal/application/auth"
+	"crontab_go/internal/application/statistics"
 	"crontab_go/internal/application/task"
 	"crontab_go/internal/application/system"
 	"crontab_go/internal/domain/entity"
@@ -32,9 +33,10 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 type Handler struct {
-	taskService   *task.Service
-	systemService *system.Service
-	authService   *auth.Service
+	taskService       *task.Service
+	systemService     *system.Service
+	authService       *auth.Service
+	statisticsService *statistics.Service
 }
 
 func NewHandler(db *gorm.DB) *Handler {
@@ -48,10 +50,13 @@ func NewHandler(db *gorm.DB) *Handler {
 	userRepo := persistence.NewUserRepository(db)
 	authService := auth.NewService(userRepo)
 
+	statisticsService := statistics.NewService(taskRepo, taskLogRepo)
+
 	return &Handler{
-		taskService:   taskService,
-		systemService: systemService,
-		authService:   authService,
+		taskService:       taskService,
+		systemService:     systemService,
+		authService:       authService,
+		statisticsService: statisticsService,
 	}
 }
 
@@ -338,4 +343,146 @@ func (h *Handler) TestNotification(c *gin.Context) {
 	notificationService.SendNotification(&req.NotificationConfig, message, req.NotificationTypes)
 
 	c.JSON(http.StatusOK, gin.H{"message": "测试通知已发送"})
+}
+
+// GetTaskStatistics 获取任务统计信息
+func (h *Handler) GetTaskStatistics(c *gin.Context) {
+	req := entity.NewStatisticsRequest()
+	
+	// 解析查询参数
+	if days := c.Query("days"); days != "" {
+		if d, err := strconv.Atoi(days); err == nil && d > 0 {
+			req.Days = d
+		}
+	}
+	
+	if taskIDStr := c.Query("task_id"); taskIDStr != "" {
+		if taskID, err := strconv.Atoi(taskIDStr); err == nil {
+			req.TaskID = &taskID
+		}
+	}
+
+	statistics, err := h.statisticsService.GetTaskStatistics(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, statistics)
+}
+
+// GetTaskStatisticsByID 获取特定任务的统计信息
+func (h *Handler) GetTaskStatisticsByID(c *gin.Context) {
+	taskID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID"})
+		return
+	}
+
+	req := entity.NewStatisticsRequest()
+	if days := c.Query("days"); days != "" {
+		if d, err := strconv.Atoi(days); err == nil && d > 0 {
+			req.Days = d
+		}
+	}
+
+	statistics, err := h.statisticsService.GetTaskStatisticsByID(taskID, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, statistics)
+}
+
+// GetExecutionTrends 获取执行趋势数据
+func (h *Handler) GetExecutionTrends(c *gin.Context) {
+	req := entity.NewStatisticsRequest()
+	
+	// 解析查询参数
+	if days := c.Query("days"); days != "" {
+		if d, err := strconv.Atoi(days); err == nil && d > 0 {
+			req.Days = d
+		}
+	}
+	
+	if taskIDStr := c.Query("task_id"); taskIDStr != "" {
+		if taskID, err := strconv.Atoi(taskIDStr); err == nil {
+			req.TaskID = &taskID
+		}
+	}
+
+	trends, err := h.statisticsService.GetExecutionTrends(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, trends)
+}
+
+// GetTaskExecutionReport 获取任务执行报表
+func (h *Handler) GetTaskExecutionReport(c *gin.Context) {
+	req := entity.NewStatisticsRequest()
+	
+	// 解析查询参数
+	if days := c.Query("days"); days != "" {
+		if d, err := strconv.Atoi(days); err == nil && d > 0 {
+			req.Days = d
+		}
+	}
+
+	report, err := h.statisticsService.GetTaskExecutionReport(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, report)
+}
+
+// GetTaskPerformanceMetrics 获取任务性能指标
+func (h *Handler) GetTaskPerformanceMetrics(c *gin.Context) {
+	req := entity.NewStatisticsRequest()
+	
+	// 解析查询参数
+	if days := c.Query("days"); days != "" {
+		if d, err := strconv.Atoi(days); err == nil && d > 0 {
+			req.Days = d
+		}
+	}
+
+	metrics, err := h.statisticsService.GetTaskPerformanceMetrics(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, metrics)
+}
+
+// GetHourlyExecutionStats 获取小时执行统计
+func (h *Handler) GetHourlyExecutionStats(c *gin.Context) {
+	req := entity.NewStatisticsRequest()
+	
+	// 解析查询参数
+	if days := c.Query("days"); days != "" {
+		if d, err := strconv.Atoi(days); err == nil && d > 0 {
+			req.Days = d
+		}
+	}
+	
+	if taskIDStr := c.Query("task_id"); taskIDStr != "" {
+		if taskID, err := strconv.Atoi(taskIDStr); err == nil {
+			req.TaskID = &taskID
+		}
+	}
+
+	stats, err := h.statisticsService.GetHourlyExecutionStats(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
 }
