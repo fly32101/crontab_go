@@ -1,0 +1,150 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: web/package-lock.json
+
+    - name: Install frontend dependencies
+      run: |
+        cd web
+        npm ci
+
+    - name: Build frontend
+      run: |
+        cd web
+        npm run build
+
+    - name: Upload frontend build
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-dist
+        path: web/dist/
+
+  build-binaries:
+    needs: [build-frontend]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: linux-amd64
+          - goos: linux
+            goarch: arm64
+            suffix: linux-arm64
+          - goos: windows
+            goarch: amd64
+            suffix: windows-amd64.exe
+          - goos: darwin
+            goarch: amd64
+            suffix: darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            suffix: darwin-arm64
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Download frontend build
+      uses: actions/download-artifact@v3
+      with:
+        name: frontend-dist
+        path: web/dist/
+
+    - name: Verify frontend files
+      run: |
+        ls -la web/dist/
+        echo "Frontend files downloaded successfully"
+
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 1
+      run: |
+        if [ "${{ matrix.goos }}" = "linux" ]; then
+          # 为 Linux 安装 CGO 依赖
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib
+          if [ "${{ matrix.goarch }}" = "arm64" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu
+            export CC=aarch64-linux-gnu-gcc
+          fi
+        fi
+        
+        go build -ldflags="-s -w" -o crontab-go-${{ matrix.suffix }} ./cmd
+
+    - name: Create release package
+      run: |
+        mkdir -p release-package
+        cp crontab-go-${{ matrix.suffix }} release-package/
+        cp -r web/dist release-package/web/
+        
+        # 创建启动脚本
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          echo '@echo off' > release-package/start.bat
+          echo 'crontab-go-${{ matrix.suffix }}' >> release-package/start.bat
+        else
+          echo '#!/bin/bash' > release-package/start.sh
+          echo './crontab-go-${{ matrix.suffix }}' >> release-package/start.sh
+          chmod +x release-package/start.sh
+        fi
+        
+        # 创建压缩包
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          cd release-package && zip -r ../crontab-go-${{ matrix.suffix }}.zip . && cd ..
+        else
+          tar -czf crontab-go-${{ matrix.suffix }}.tar.gz -C release-package .
+        fi
+
+    - name: Upload binary package
+      uses: actions/upload-artifact@v3
+      with:
+        name: crontab-go-${{ matrix.suffix }}-package
+        path: |
+          crontab-go-${{ matrix.suffix }}.tar.gz
+          crontab-go-${{ matrix.suffix }}.zip
+
+
+  upload-assets:
+    needs: [build-binaries]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+
+    - name: List downloaded files
+      run: |
+        find . -name "*.tar.gz" -o -name "*.zip" | head -20
+
+    - name: Upload release assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          crontab-go-*-package/*.tar.gz
+          crontab-go-*-package/*.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}}
