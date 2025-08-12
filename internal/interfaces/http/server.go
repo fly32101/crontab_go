@@ -73,6 +73,12 @@ func registerRoutes(engine *gin.Engine, handler *Handler) {
 			logs.GET("", handler.GetAllLogs)             // 获取所有日志
 			logs.GET("/paginated", handler.GetAllLogsWithPagination) // 分页获取所有日志
 		}
+
+		// 通知相关路由（需要认证）
+		notifications := authenticated.Group("/notifications")
+		{
+			notifications.POST("/test", handler.TestNotification) // 测试通知
+		}
 	}
 }
 

@@ -5,9 +5,11 @@ import (
 	"crontab_go/internal/application/task"
 	"crontab_go/internal/application/system"
 	"crontab_go/internal/domain/entity"
+	"crontab_go/internal/domain/service"
 	"crontab_go/internal/infrastructure/persistence"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -307,4 +309,33 @@ func (h *Handler) GetAllLogsWithPagination(c *gin.Context) {
 		"page":  page,
 		"pageSize": pageSize,
 	})
+}
+
+// TestNotification 测试通知配置
+func (h *Handler) TestNotification(c *gin.Context) {
+	var req struct {
+		NotificationTypes  []string                     `json:"notification_types"`
+		NotificationConfig entity.NotificationConfig   `json:"notification_config"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 创建测试消息
+	message := &entity.NotificationMessage{
+		TaskName:  "测试任务",
+		Success:   true,
+		StartTime: time.Now().Add(-time.Minute).Format("2006-01-02 15:04:05"),
+		EndTime:   time.Now().Format("2006-01-02 15:04:05"),
+		Duration:  "1m0s",
+		Output:    "这是一条测试通知消息",
+	}
+
+	// 发送测试通知
+	notificationService := service.NewNotificationService()
+	notificationService.SendNotification(&req.NotificationConfig, message, req.NotificationTypes)
+
+	c.JSON(http.StatusOK, gin.H{"message": "测试通知已发送"})
 }

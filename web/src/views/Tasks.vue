@@ -134,6 +134,121 @@
         <a-form-item label="启用任务">
           <a-switch v-model:checked="taskFormData.enabled" />
         </a-form-item>
+
+        <!-- 通知配置 -->
+        <a-divider>通知配置</a-divider>
+        
+        <a-form-item label="通知时机">
+          <a-checkbox-group v-model:value="notifyTiming">
+            <a-checkbox value="success">执行成功时通知</a-checkbox>
+            <a-checkbox value="failure">执行失败时通知</a-checkbox>
+          </a-checkbox-group>
+        </a-form-item>
+        
+        <a-form-item label="通知方式" v-if="notifyTiming.length > 0">
+          <a-checkbox-group v-model:value="notificationTypes">
+            <a-checkbox value="email">邮件通知</a-checkbox>
+            <a-checkbox value="dingtalk">钉钉通知</a-checkbox>
+            <a-checkbox value="wechat">企业微信通知</a-checkbox>
+          </a-checkbox-group>
+        </a-form-item>
+
+        <!-- 邮件配置 -->
+        <a-collapse v-if="notificationTypes.includes('email')" style="margin-bottom: 16px;">
+          <a-collapse-panel key="email" header="邮件通知配置">
+            <a-row :gutter="16">
+              <a-col :span="12">
+                <a-form-item label="SMTP服务器">
+                  <a-input v-model:value="emailConfig.smtp_host" placeholder="smtp.gmail.com" />
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <a-form-item label="SMTP端口">
+                  <a-input-number v-model:value="emailConfig.smtp_port" :min="1" :max="65535" placeholder="587" style="width: 100%" />
+                </a-form-item>
+              </a-col>
+            </a-row>
+            <a-row :gutter="16">
+              <a-col :span="12">
+                <a-form-item label="用户名">
+                  <a-input v-model:value="emailConfig.username" />
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <a-form-item label="密码">
+                  <a-input-password v-model:value="emailConfig.password" />
+                </a-form-item>
+              </a-col>
+            </a-row>
+            <a-form-item label="发件人">
+              <a-input v-model:value="emailConfig.from" />
+            </a-form-item>
+            <a-form-item label="收件人">
+              <a-select
+                v-model:value="emailConfig.to"
+                mode="tags"
+                placeholder="输入邮箱地址，按回车添加"
+                style="width: 100%"
+              />
+            </a-form-item>
+            <a-form-item label="邮件主题">
+              <a-input v-model:value="emailConfig.subject" placeholder="留空使用默认主题" />
+            </a-form-item>
+            <a-form-item>
+              <a-checkbox v-model:checked="emailConfig.enable_tls">启用TLS</a-checkbox>
+            </a-form-item>
+          </a-collapse-panel>
+        </a-collapse>
+
+        <!-- 钉钉配置 -->
+        <a-collapse v-if="notificationTypes.includes('dingtalk')" style="margin-bottom: 16px;">
+          <a-collapse-panel key="dingtalk" header="钉钉通知配置">
+            <a-form-item label="Webhook URL">
+              <a-input v-model:value="dingtalkConfig.webhook_url" placeholder="https://oapi.dingtalk.com/robot/send?access_token=..." />
+            </a-form-item>
+            <a-form-item label="签名密钥">
+              <a-input v-model:value="dingtalkConfig.secret" placeholder="可选，用于签名验证" />
+            </a-form-item>
+            <a-form-item label="@手机号">
+              <a-select
+                v-model:value="dingtalkConfig.at_mobiles"
+                mode="tags"
+                placeholder="输入手机号，按回车添加"
+                style="width: 100%"
+              />
+            </a-form-item>
+            <a-form-item>
+              <a-checkbox v-model:checked="dingtalkConfig.at_all">@所有人</a-checkbox>
+            </a-form-item>
+          </a-collapse-panel>
+        </a-collapse>
+
+        <!-- 企业微信配置 -->
+        <a-collapse v-if="notificationTypes.includes('wechat')" style="margin-bottom: 16px;">
+          <a-collapse-panel key="wechat" header="企业微信通知配置">
+            <a-form-item label="Webhook URL">
+              <a-input v-model:value="wechatConfig.webhook_url" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..." />
+            </a-form-item>
+            <a-form-item label="@用户ID">
+              <a-select
+                v-model:value="wechatConfig.at_user_ids"
+                mode="tags"
+                placeholder="输入用户ID，按回车添加"
+                style="width: 100%"
+              />
+            </a-form-item>
+            <a-form-item>
+              <a-checkbox v-model:checked="wechatConfig.at_all">@所有人</a-checkbox>
+            </a-form-item>
+          </a-collapse-panel>
+        </a-collapse>
+
+        <!-- 测试通知按钮 -->
+        <a-form-item v-if="notificationTypes.length > 0">
+          <a-button @click="testNotification" :loading="testingNotification">
+            测试通知
+          </a-button>
+        </a-form-item>
       </a-form>
     </a-modal>
   </div>
@@ -168,7 +283,37 @@ const taskFormData = ref({
   method: 'GET',
   headers: '',
   description: '',
-  enabled: true
+  enabled: true,
+  notify_on_success: false,
+  notify_on_failure: true,
+  notification_types: '',
+  notification_config: ''
+})
+
+// 通知相关的响应式数据
+const testingNotification = ref(false)
+const notifyTiming = ref([])
+const notificationTypes = ref([])
+const emailConfig = ref({
+  smtp_host: '',
+  smtp_port: 587,
+  username: '',
+  password: '',
+  from: '',
+  to: [],
+  subject: '',
+  enable_tls: true
+})
+const dingtalkConfig = ref({
+  webhook_url: '',
+  secret: '',
+  at_mobiles: [],
+  at_all: false
+})
+const wechatConfig = ref({
+  webhook_url: '',
+  at_user_ids: [],
+  at_all: false
 })
 
 const columns = [
@@ -224,6 +369,9 @@ const openTaskDialog = (task = null) => {
   editingTask.value = task
   if (task) {
     taskFormData.value = { ...task }
+    
+    // 解析通知配置
+    parseNotificationConfig(task)
   } else {
     taskFormData.value = {
       name: '',
@@ -232,16 +380,96 @@ const openTaskDialog = (task = null) => {
       method: 'GET',
       headers: '',
       description: '',
-      enabled: true
+      enabled: true,
+      notify_on_success: false,
+      notify_on_failure: true,
+      notification_types: '',
+      notification_config: ''
     }
+    
+    // 重置通知配置
+    resetNotificationConfig()
   }
   taskDialog.value = true
+}
+
+// 解析通知配置
+const parseNotificationConfig = (task) => {
+  // 解析通知时机
+  notifyTiming.value = []
+  if (task.notify_on_success) notifyTiming.value.push('success')
+  if (task.notify_on_failure) notifyTiming.value.push('failure')
+  
+  // 解析通知类型
+  try {
+    notificationTypes.value = task.notification_types ? JSON.parse(task.notification_types) : []
+  } catch (e) {
+    notificationTypes.value = []
+  }
+  
+  // 解析通知配置
+  try {
+    const config = task.notification_config ? JSON.parse(task.notification_config) : {}
+    emailConfig.value = config.email || {
+      smtp_host: '',
+      smtp_port: 587,
+      username: '',
+      password: '',
+      from: '',
+      to: [],
+      subject: '',
+      enable_tls: true
+    }
+    dingtalkConfig.value = config.dingtalk || {
+      webhook_url: '',
+      secret: '',
+      at_mobiles: [],
+      at_all: false
+    }
+    wechatConfig.value = config.wechat || {
+      webhook_url: '',
+      at_user_ids: [],
+      at_all: false
+    }
+  } catch (e) {
+    resetNotificationConfig()
+  }
+}
+
+// 重置通知配置
+const resetNotificationConfig = () => {
+  notifyTiming.value = []
+  notificationTypes.value = []
+  emailConfig.value = {
+    smtp_host: '',
+    smtp_port: 587,
+    username: '',
+    password: '',
+    from: '',
+    to: [],
+    subject: '',
+    enable_tls: true
+  }
+  dingtalkConfig.value = {
+    webhook_url: '',
+    secret: '',
+    at_mobiles: [],
+    at_all: false
+  }
+  wechatConfig.value = {
+    webhook_url: '',
+    at_user_ids: [],
+    at_all: false
+  }
 }
 
 const saveTask = async () => {
   try {
     await taskFormRef.value.validate()
     saving.value = true
+    
+    // 构建通知配置
+    buildNotificationConfig()
     
     if (editingTask.value) {
       await api.put(`/tasks/${editingTask.value.id}`, taskFormData.value)
@@ -263,6 +491,63 @@ const saveTask = async () => {
     }
   } finally {
     saving.value = false
+  }
+}
+
+// 构建通知配置
+const buildNotificationConfig = () => {
+  // 设置通知时机
+  taskFormData.value.notify_on_success = notifyTiming.value.includes('success')
+  taskFormData.value.notify_on_failure = notifyTiming.value.includes('failure')
+  
+  // 设置通知类型
+  taskFormData.value.notification_types = JSON.stringify(notificationTypes.value)
+  
+  // 构建通知配置
+  const config = {}
+  if (notificationTypes.value.includes('email')) {
+    config.email = { ...emailConfig.value }
+  }
+  if (notificationTypes.value.includes('dingtalk')) {
+    config.dingtalk = { ...dingtalkConfig.value }
+  }
+  if (notificationTypes.value.includes('wechat')) {
+    config.wechat = { ...wechatConfig.value }
+  }
+  
+  taskFormData.value.notification_config = JSON.stringify(config)
+}
+
+// 测试通知
+const testNotification = async () => {
+  if (notificationTypes.value.length === 0) {
+    message.warning('请先选择通知方式')
+    return
+  }
+  
+  testingNotification.value = true
+  try {
+    const config = {}
+    if (notificationTypes.value.includes('email')) {
+      config.email = { ...emailConfig.value }
+    }
+    if (notificationTypes.value.includes('dingtalk')) {
+      config.dingtalk = { ...dingtalkConfig.value }
+    }
+    if (notificationTypes.value.includes('wechat')) {
+      config.wechat = { ...wechatConfig.value }
+    }
+    
+    await api.post('/notifications/test', {
+      notification_types: notificationTypes.value,
+      notification_config: config
+    })
+    
+    message.success('测试通知已发送，请检查相应的通知渠道')
+  } catch (error) {
+    message.error('测试通知发送失败')
+  } finally {
+    testingNotification.value = false
   }
 }
 
