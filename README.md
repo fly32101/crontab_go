@@ -1,9 +1,11 @@
 # Crontab Go
 
+[![CI](https://github.com/your-username/crontab_go/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/crontab_go/actions/workflows/ci.yml)
 [![Build and Release](https://github.com/your-username/crontab_go/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/your-username/crontab_go/actions/workflows/build-and-release.yml)
-[![Docker Image](https://ghcr-badge.deta.dev/your-username/crontab_go/latest_tag?trim=major&label=Docker%20Image)](https://github.com/your-username/crontab_go/pkgs/container/crontab_go)
+[![Simple Test](https://github.com/your-username/crontab_go/actions/workflows/simple-test.yml/badge.svg)](https://github.com/your-username/crontab_go/actions/workflows/simple-test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/your-username/crontab_go)](https://goreportcard.com/report/github.com/your-username/crontab_go)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Latest Release](https://img.shields.io/github/v/release/your-username/crontab_go)](https://github.com/your-username/crontab_go/releases)
 
 一个基于 Go 语言的现代化定时任务管理系统，提供美观的 Web 界面和完整的 RESTful API 来管理定时任务和监控系统状态。
 
