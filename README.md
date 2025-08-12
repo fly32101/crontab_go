@@ -102,49 +102,37 @@ crontab_go/
 
 ## 🚀 快速开始
 
-### 🐳 Docker 部署（推荐）
+### 📥 二进制部署（推荐）
 
-#### 使用 Docker Compose（最简单）
+1. **下载二进制文件**
+   
+   从 [Releases](https://github.com/your-username/crontab_go/releases) 页面下载对应平台的二进制文件：
+   - Linux AMD64: `crontab-go-linux-amd64`
+   - Linux ARM64: `crontab-go-linux-arm64`
+   - Windows AMD64: `crontab-go-windows-amd64.exe`
+   - macOS AMD64: `crontab-go-darwin-amd64`
+   - macOS ARM64: `crontab-go-darwin-arm64`
 
-1. **下载配置文件**
+2. **给执行权限**（Linux/macOS）
    ```bash
-   curl -O https://raw.githubusercontent.com/your-username/crontab_go/main/docker-compose.yml
+   chmod +x crontab-go-*
    ```
 
-2. **启动服务**
+3. **运行应用**
    ```bash
-   docker-compose up -d
+   # Linux
+   ./crontab-go-linux-amd64
+   
+   # macOS
+   ./crontab-go-darwin-amd64
+   
+   # Windows
+   crontab-go-windows-amd64.exe
    ```
 
-3. **访问应用**
+4. **访问应用**
    - 应用将在 `http://localhost:8080` 启动
-   - 数据将保存在 `./data` 目录中
-
-#### 使用 Docker 直接运行
-
-```bash
-# 创建数据目录
-mkdir -p data
-
-# 运行容器
-docker run -d \
-  --name crontab-go \
-  -p 8080:8080 \
-  -v $(pwd)/data:/app/data \
-  -e TZ=Asia/Shanghai \
-  ghcr.io/your-username/crontab_go:latest
-```
-
-#### 使用部署脚本
-
-```bash
-# Linux/macOS
-chmod +x scripts/deploy.sh
-./scripts/deploy.sh
-
-# Windows
-scripts\deploy.bat
-```
+   - 首次访问会自动跳转到登录页面
 
 ### 📦 源码部署
 
@@ -182,9 +170,40 @@ scripts\deploy.bat
    ./crontab_go
    ```
 
-4. **访问应用**
-   - 应用将在 `http://localhost:8080` 启动
-   - 首次访问会自动跳转到登录页面
+### 🐳 Docker 部署（可选）
+
+如果你熟悉 Docker，也可以使用 Docker 部署：
+
+#### 使用 Docker Compose
+
+1. **下载配置文件**
+   ```bash
+   curl -O https://raw.githubusercontent.com/your-username/crontab_go/main/docker-compose.yml
+   ```
+
+2. **启动服务**
+   ```bash
+   docker-compose up -d
+   ```
+
+#### 自行构建镜像
+
+```bash
+# 克隆项目
+git clone <repository-url>
+cd crontab_go
+
+# 构建镜像
+docker build -t crontab-go:latest .
+
+# 运行容器
+docker run -d \
+  --name crontab-go \
+  -p 8080:8080 \
+  -v $(pwd)/data:/app/data \
+  -e TZ=Asia/Shanghai \
+  crontab-go:latest
+```
 
 ### 🔑 默认账户
 
