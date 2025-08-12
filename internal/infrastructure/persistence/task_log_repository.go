@@ -51,3 +51,31 @@ func (r *SQLiteTaskLogRepository) GetLogsByTaskIDWithPagination(taskID int, req 
 	
 	return logs, total, nil
 }
+
+// GetAllLogs 获取所有任务日志
+func (r *SQLiteTaskLogRepository) GetAllLogs() ([]entity.TaskLog, error) {
+	var logs []entity.TaskLog
+	if err := r.DB.Order("start_time DESC").Find(&logs).Error; err != nil {
+		return nil, err
+	}
+	return logs, nil
+}
+
+// GetAllLogsWithPagination 分页获取所有任务日志
+func (r *SQLiteTaskLogRepository) GetAllLogsWithPagination(page, pageSize int) ([]entity.TaskLog, int64, error) {
+	var logs []entity.TaskLog
+	var total int64
+
+	// 获取总数
+	if err := r.DB.Model(&entity.TaskLog{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 分页查询
+	offset := (page - 1) * pageSize
+	if err := r.DB.Order("start_time DESC").Offset(offset).Limit(pageSize).Find(&logs).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return logs, total, nil
+}

@@ -202,6 +202,11 @@ func (h *Handler) GetSystemStats(c *gin.Context) {
 		return
 	}
 
+	// 对百分比字段保留两位小数
+	stats.CPUUsage = float64(int(stats.CPUUsage*100)) / 100
+	stats.MemoryUsage = float64(int(stats.MemoryUsage*100)) / 100
+	stats.DiskUsage = float64(int(stats.DiskUsage*100)) / 100
+
 	c.JSON(http.StatusOK, stats)
 }
 
@@ -279,20 +284,27 @@ func (h *Handler) GetAllLogs(c *gin.Context) {
 
 // GetAllLogsWithPagination 分页获取所有任务执行日志
 func (h *Handler) GetAllLogsWithPagination(c *gin.Context) {
-	var req entity.PaginationRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	
-	// 设置默认值
-	paginationReq := entity.NewPaginationRequest(req.Page, req.PageSize)
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
 
-	response, err := h.taskService.GetAllLogsWithPagination(paginationReq)
+	// 确保页码和每页大小有效
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	logs, total, err := h.taskService.GetAllLogsWithPagination(page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{
+		"logs":  logs,
+		"total": total,
+		"page":  page,
+		"pageSize": pageSize,
+	})
 }
