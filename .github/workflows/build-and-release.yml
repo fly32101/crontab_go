@@ -1,18 +1,12 @@
-name: Build and Release
+name: Release
 
 on:
-  push:
-    branches: [ main, master ]
-    tags: [ 'v*' ]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  release:
+    types: [created]
 
 jobs:
   build-binaries:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -81,53 +75,10 @@ jobs:
         name: crontab-go-${{ matrix.suffix }}
         path: crontab-go-${{ matrix.suffix }}
 
-  build-docker:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        platforms: linux/amd64,linux/arm64
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-  release:
+  upload-assets:
     needs: [build-binaries]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
 
@@ -137,59 +88,10 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v3
 
-    - name: Create release
+    - name: Upload release assets
       uses: softprops/action-gh-release@v1
       with:
         files: |
           crontab-go-*/crontab-go-*
-        body: |
-          ## 🚀 Release Notes
-          
-          ### 📦 Docker Images
-          ```bash
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
-          ```
-          
-          ### 📥 Binary Downloads
-          - **Linux AMD64**: `crontab-go-linux-amd64`
-          - **Linux ARM64**: `crontab-go-linux-arm64`
-          - **Windows AMD64**: `crontab-go-windows-amd64.exe`
-          - **macOS AMD64**: `crontab-go-darwin-amd64`
-          - **macOS ARM64**: `crontab-go-darwin-arm64`
-          
-          ### 🐳 Quick Start with Docker
-          ```bash
-          # 使用 Docker Compose
-          curl -O https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml
-          docker-compose up -d
-          
-          # 或直接运行
-          docker run -d -p 8080:8080 -v $(pwd)/data:/app/data ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
-          ```
-          
-          ### 🚀 Binary Quick Start
-          
-          1. **下载对应平台的二进制文件**
-          2. **给执行权限** (Linux/macOS):
-             ```bash
-             chmod +x crontab-go-*
-             ```
-          3. **运行应用**:
-             ```bash
-             ./crontab-go-linux-amd64  # Linux
-             ./crontab-go-darwin-amd64 # macOS
-             crontab-go-windows-amd64.exe # Windows
-             ```
-          4. **访问应用**: http://localhost:8080
-          5. **默认账户**: admin/admin123
-          
-          ### 📖 Documentation
-          - [Installation Guide](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/README.md)
-          - [Docker Deployment](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/DOCKER.md)
-          - [API Documentation](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/API.md)
-          - [Notification Setup](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/NOTIFICATION.md)
-          - [Task Templates](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/TASK_TEMPLATES.md)
-        draft: false
-        prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

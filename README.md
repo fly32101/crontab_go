@@ -1,7 +1,6 @@
 # Crontab Go
 
-[![CI](https://github.com/your-username/crontab_go/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/crontab_go/actions/workflows/ci.yml)
-[![Build and Release](https://github.com/your-username/crontab_go/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/your-username/crontab_go/actions/workflows/build-and-release.yml)
+[![Release](https://github.com/your-username/crontab_go/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/your-username/crontab_go/actions/workflows/build-and-release.yml)
 [![Simple Test](https://github.com/your-username/crontab_go/actions/workflows/simple-test.yml/badge.svg)](https://github.com/your-username/crontab_go/actions/workflows/simple-test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/your-username/crontab_go)](https://goreportcard.com/report/github.com/your-username/crontab_go)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
