@@ -1,5 +1,10 @@
 # Crontab Go
 
+[![Build and Release](https://github.com/your-username/crontab_go/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/your-username/crontab_go/actions/workflows/build-and-release.yml)
+[![Docker Image](https://ghcr-badge.deta.dev/your-username/crontab_go/latest_tag?trim=major&label=Docker%20Image)](https://github.com/your-username/crontab_go/pkgs/container/crontab_go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/your-username/crontab_go)](https://goreportcard.com/report/github.com/your-username/crontab_go)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 一个基于 Go 语言的现代化定时任务管理系统，提供美观的 Web 界面和完整的 RESTful API 来管理定时任务和监控系统状态。
 
 ## ✨ 功能特性
@@ -97,12 +102,59 @@ crontab_go/
 
 ## 🚀 快速开始
 
-### 📋 前提条件
+### 🐳 Docker 部署（推荐）
+
+#### 使用 Docker Compose（最简单）
+
+1. **下载配置文件**
+   ```bash
+   curl -O https://raw.githubusercontent.com/your-username/crontab_go/main/docker-compose.yml
+   ```
+
+2. **启动服务**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **访问应用**
+   - 应用将在 `http://localhost:8080` 启动
+   - 数据将保存在 `./data` 目录中
+
+#### 使用 Docker 直接运行
+
+```bash
+# 创建数据目录
+mkdir -p data
+
+# 运行容器
+docker run -d \
+  --name crontab-go \
+  -p 8080:8080 \
+  -v $(pwd)/data:/app/data \
+  -e TZ=Asia/Shanghai \
+  ghcr.io/your-username/crontab_go:latest
+```
+
+#### 使用部署脚本
+
+```bash
+# Linux/macOS
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh
+
+# Windows
+scripts\deploy.bat
+```
+
+### 📦 源码部署
+
+#### 前提条件
 
 - Go 1.21 或更高版本
+- Node.js 18 或更高版本
 - Git（用于克隆项目）
 
-### 📦 安装与运行
+#### 安装与运行
 
 1. **克隆项目**
 
@@ -111,16 +163,23 @@ crontab_go/
    cd crontab_go
    ```
 
-2. **安装依赖**
+2. **构建应用**
 
    ```bash
+   # 使用构建脚本
+   chmod +x scripts/build.sh
+   ./scripts/build.sh
+   
+   # 或手动构建
+   cd web && npm install && npm run build && cd ..
    go mod tidy
+   go build -o crontab_go ./cmd
    ```
 
 3. **运行应用**
 
    ```bash
-   go run cmd/main.go
+   ./crontab_go
    ```
 
 4. **访问应用**
@@ -137,14 +196,48 @@ crontab_go/
 
 > ⚠️ **安全提示**: 首次登录后请及时修改默认密码
 
-### 🏗 编译部署
+## 🐳 Docker 部署
+
+### 环境变量配置
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `DB_PATH` | `/app/data/crontab.db` | 数据库文件路径 |
+| `JWT_SECRET` | 随机生成 | JWT 密钥（生产环境请设置） |
+| `GIN_MODE` | `release` | Gin 运行模式 |
+| `TZ` | `Asia/Shanghai` | 时区设置 |
+
+### Docker Compose 配置示例
+
+```yaml
+version: '3.8'
+services:
+  crontab-go:
+    image: ghcr.io/your-username/crontab_go:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - TZ=Asia/Shanghai
+      - JWT_SECRET=your-secret-key
+    restart: unless-stopped
+```
+
+### 数据持久化
+
+- 数据库文件：`/app/data/crontab.db`
+- 建议挂载 `/app/data` 目录到宿主机
+- 支持定期备份和恢复
+
+### 健康检查
+
+容器内置健康检查，检查端点：`/api/v1/system/stats`
 
 ```bash
-# 编译可执行文件
-go build -o crontab_go cmd/main.go
-
-# 运行编译后的程序
-./crontab_go
+# 检查容器健康状态
+docker ps
+docker inspect crontab-go | grep Health
 ```
 
 ## 📖 使用指南
@@ -355,10 +448,11 @@ go run cmd/main.go
 - [x] 任务执行结果通知（邮件、钉钉、企业微信）
 - [x] 任务执行统计和报表
 - [x] 任务模板功能
+- [x] Docker 容器化部署
+- [x] GitHub Actions CI/CD
 - [ ] 任务依赖关系管理
 - [ ] 更多系统监控指标
 - [ ] 多用户权限细化
-- [ ] Docker 容器化部署
 - [ ] 集群模式支持
 
 ## 🤝 贡献指南

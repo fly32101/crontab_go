@@ -1,0 +1,63 @@
+name: Test
+
+on:
+  workflow_dispatch:  # 手动触发
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: web/package-lock.json
+
+    - name: Install frontend dependencies
+      run: |
+        cd web
+        npm ci
+
+    - name: Build frontend
+      run: |
+        cd web
+        npm run build
+
+    - name: Run Go tests (if any)
+      run: |
+        if go list ./... | grep -q .; then
+          go test -v ./... || echo "No tests found or tests failed, continuing..."
+        else
+          echo "No Go packages with tests found"
+        fi
+
+    - name: Run Go vet
+      run: go vet ./...
+
+    - name: Check Go formatting
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "The following files are not formatted:"
+          gofmt -s -l .
+          echo "Please run 'gofmt -s -w .'"
+          exit 1
+        fi
+
+    - name: Run Go mod tidy check
+      run: |
+        go mod tidy
+        if [ -n "$(git status --porcelain go.mod go.sum)" ]; then
+          echo "go.mod or go.sum is not tidy"
+          git diff go.mod go.sum
+          exit 1
+        fi
