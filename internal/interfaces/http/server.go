@@ -90,6 +90,31 @@ func registerRoutes(engine *gin.Engine, handler *Handler) {
 			stats.GET("/performance", handler.GetTaskPerformanceMetrics)     // 获取性能指标
 			stats.GET("/hourly", handler.GetHourlyExecutionStats)            // 获取小时统计
 		}
+
+		// 模板相关路由（需要认证）
+		templates := authenticated.Group("/templates")
+		{
+			templates.POST("", handler.CreateTemplate)                       // 创建模板
+			templates.GET("", handler.ListTemplates)                         // 获取模板列表
+			templates.GET("/public", handler.ListPublicTemplates)            // 获取公共模板
+			templates.GET("/my", handler.ListMyTemplates)                    // 获取我的模板
+			templates.GET("/search", handler.SearchTemplates)               // 搜索模板
+			templates.GET("/popular", handler.GetPopularTemplates)          // 获取热门模板
+			templates.GET("/stats", handler.GetTemplateStats)               // 获取模板统计
+			templates.GET("/:id", handler.GetTemplate)                      // 获取模板详情
+			templates.PUT("/:id", handler.UpdateTemplate)                   // 更新模板
+			templates.DELETE("/:id", handler.DeleteTemplate)                // 删除模板
+			templates.POST("/create-task", handler.CreateTaskFromTemplate)  // 从模板创建任务
+		}
+
+		// 模板分类相关路由（需要认证）
+		categories := authenticated.Group("/template-categories")
+		{
+			categories.POST("", handler.CreateCategory)                      // 创建分类
+			categories.GET("", handler.ListCategories)                       // 获取分类列表
+			categories.PUT("/:id", handler.UpdateCategory)                   // 更新分类
+			categories.DELETE("/:id", handler.DeleteCategory)                // 删除分类
+		}
 	}
 }
 

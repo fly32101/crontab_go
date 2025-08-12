@@ -2,6 +2,7 @@ package main
 
 import (
 	"crontab_go/internal/application/system"
+	"crontab_go/internal/application/template"
 	"crontab_go/internal/domain/service"
 	"crontab_go/internal/infrastructure/persistence"
 	"crontab_go/internal/interfaces/http"
@@ -26,6 +27,19 @@ func main() {
 	// 初始化系统服务
 	systemRepo := persistence.NewSystemRepository(db.Client)
 	systemService := system.NewService(systemRepo)
+
+	// 初始化模板服务并创建默认数据
+	templateRepo := persistence.NewTaskTemplateRepository(db.Client)
+	categoryRepo := persistence.NewTaskTemplateCategoryRepository(db.Client)
+	templateService := template.NewService(templateRepo, categoryRepo, taskRepo)
+
+	// 初始化默认分类和模板
+	if err := templateService.InitializeDefaultCategories(); err != nil {
+		log.Printf("Failed to initialize default categories: %v", err)
+	}
+	if err := templateService.CreateDefaultTemplates(); err != nil {
+		log.Printf("Failed to create default templates: %v", err)
+	}
 
 	// 启动系统监控数据收集
 	go func() {

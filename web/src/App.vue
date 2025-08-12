@@ -87,6 +87,7 @@ import {
   FileTextOutlined,
   MonitorOutlined,
   BarChartOutlined,
+  AppstoreOutlined,
   LogoutOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
@@ -105,6 +106,7 @@ const selectedKeys = ref(['dashboard'])
 const menuItems = [
   { title: '仪表板', icon: DashboardOutlined, to: '/dashboard', value: 'dashboard' },
   { title: '任务管理', icon: ClockCircleOutlined, to: '/tasks', value: 'tasks' },
+  { title: '任务模板', icon: AppstoreOutlined, to: '/templates', value: 'templates' },
   { title: '执行日志', icon: FileTextOutlined, to: '/logs', value: 'logs' },
   { title: '执行统计', icon: BarChartOutlined, to: '/statistics', value: 'statistics' },
   { title: '系统监控', icon: MonitorOutlined, to: '/system', value: 'system' }

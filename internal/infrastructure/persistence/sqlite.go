@@ -19,7 +19,14 @@ func NewSQLiteDB(dsn string) (*SQLiteDB, error) {
 	}
 
 	// 自动迁移数据库结构
-	if err := db.AutoMigrate(&entity.Task{}, &entity.SystemStats{}, &entity.TaskLog{}, &entity.User{}); err != nil {
+	if err := db.AutoMigrate(
+		&entity.Task{}, 
+		&entity.SystemStats{}, 
+		&entity.TaskLog{}, 
+		&entity.User{},
+		&entity.TaskTemplate{},
+		&entity.TaskTemplateCategory{},
+	); err != nil {
 		return nil, err
 	}
 	

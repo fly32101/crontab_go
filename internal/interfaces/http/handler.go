@@ -3,8 +3,9 @@ package http
 import (
 	"crontab_go/internal/application/auth"
 	"crontab_go/internal/application/statistics"
-	"crontab_go/internal/application/task"
 	"crontab_go/internal/application/system"
+	"crontab_go/internal/application/task"
+	"crontab_go/internal/application/template"
 	"crontab_go/internal/domain/entity"
 	"crontab_go/internal/domain/service"
 	"crontab_go/internal/infrastructure/persistence"
@@ -37,6 +38,7 @@ type Handler struct {
 	systemService     *system.Service
 	authService       *auth.Service
 	statisticsService *statistics.Service
+	templateService   *template.Service
 }
 
 func NewHandler(db *gorm.DB) *Handler {
@@ -52,11 +54,16 @@ func NewHandler(db *gorm.DB) *Handler {
 
 	statisticsService := statistics.NewService(taskRepo, taskLogRepo)
 
+	templateRepo := persistence.NewTaskTemplateRepository(db)
+	categoryRepo := persistence.NewTaskTemplateCategoryRepository(db)
+	templateService := template.NewService(templateRepo, categoryRepo, taskRepo)
+
 	return &Handler{
 		taskService:       taskService,
 		systemService:     systemService,
 		authService:       authService,
 		statisticsService: statisticsService,
+		templateService:   templateService,
 	}
 }
 
@@ -108,10 +115,10 @@ func (h *Handler) ListTasksWithPagination(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// 设置默认值
 	paginationReq := entity.NewPaginationRequest(req.Page, req.PageSize)
-	
+
 	response, err := h.taskService.ListTasksWithPagination(paginationReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -188,7 +195,7 @@ func (h *Handler) GetTaskLogsWithPagination(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// 设置默认值
 	paginationReq := entity.NewPaginationRequest(req.Page, req.PageSize)
 
@@ -309,9 +316,9 @@ func (h *Handler) GetAllLogsWithPagination(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"logs":  logs,
-		"total": total,
-		"page":  page,
+		"logs":     logs,
+		"total":    total,
+		"page":     page,
 		"pageSize": pageSize,
 	})
 }
@@ -319,10 +326,10 @@ func (h *Handler) GetAllLogsWithPagination(c *gin.Context) {
 // TestNotification 测试通知配置
 func (h *Handler) TestNotification(c *gin.Context) {
 	var req struct {
-		NotificationTypes  []string                     `json:"notification_types"`
-		NotificationConfig entity.NotificationConfig   `json:"notification_config"`
+		NotificationTypes  []string                  `json:"notification_types"`
+		NotificationConfig entity.NotificationConfig `json:"notification_config"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -348,14 +355,14 @@ func (h *Handler) TestNotification(c *gin.Context) {
 // GetTaskStatistics 获取任务统计信息
 func (h *Handler) GetTaskStatistics(c *gin.Context) {
 	req := entity.NewStatisticsRequest()
-	
+
 	// 解析查询参数
 	if days := c.Query("days"); days != "" {
 		if d, err := strconv.Atoi(days); err == nil && d > 0 {
 			req.Days = d
 		}
 	}
-	
+
 	if taskIDStr := c.Query("task_id"); taskIDStr != "" {
 		if taskID, err := strconv.Atoi(taskIDStr); err == nil {
 			req.TaskID = &taskID
@@ -398,14 +405,14 @@ func (h *Handler) GetTaskStatisticsByID(c *gin.Context) {
 // GetExecutionTrends 获取执行趋势数据
 func (h *Handler) GetExecutionTrends(c *gin.Context) {
 	req := entity.NewStatisticsRequest()
-	
+
 	// 解析查询参数
 	if days := c.Query("days"); days != "" {
 		if d, err := strconv.Atoi(days); err == nil && d > 0 {
 			req.Days = d
 		}
 	}
-	
+
 	if taskIDStr := c.Query("task_id"); taskIDStr != "" {
 		if taskID, err := strconv.Atoi(taskIDStr); err == nil {
 			req.TaskID = &taskID
@@ -424,7 +431,7 @@ func (h *Handler) GetExecutionTrends(c *gin.Context) {
 // GetTaskExecutionReport 获取任务执行报表
 func (h *Handler) GetTaskExecutionReport(c *gin.Context) {
 	req := entity.NewStatisticsRequest()
-	
+
 	// 解析查询参数
 	if days := c.Query("days"); days != "" {
 		if d, err := strconv.Atoi(days); err == nil && d > 0 {
@@ -444,7 +451,7 @@ func (h *Handler) GetTaskExecutionReport(c *gin.Context) {
 // GetTaskPerformanceMetrics 获取任务性能指标
 func (h *Handler) GetTaskPerformanceMetrics(c *gin.Context) {
 	req := entity.NewStatisticsRequest()
-	
+
 	// 解析查询参数
 	if days := c.Query("days"); days != "" {
 		if d, err := strconv.Atoi(days); err == nil && d > 0 {
@@ -464,14 +471,14 @@ func (h *Handler) GetTaskPerformanceMetrics(c *gin.Context) {
 // GetHourlyExecutionStats 获取小时执行统计
 func (h *Handler) GetHourlyExecutionStats(c *gin.Context) {
 	req := entity.NewStatisticsRequest()
-	
+
 	// 解析查询参数
 	if days := c.Query("days"); days != "" {
 		if d, err := strconv.Atoi(days); err == nil && d > 0 {
 			req.Days = d
 		}
 	}
-	
+
 	if taskIDStr := c.Query("task_id"); taskIDStr != "" {
 		if taskID, err := strconv.Atoi(taskIDStr); err == nil {
 			req.TaskID = &taskID
@@ -485,4 +492,280 @@ func (h *Handler) GetHourlyExecutionStats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, stats)
+}
+
+// 任务模板相关接口
+
+// CreateTemplate 创建任务模板
+func (h *Handler) CreateTemplate(c *gin.Context) {
+	var template entity.TaskTemplate
+	if err := c.ShouldBindJSON(&template); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 获取当前用户ID
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未认证"})
+		return
+	}
+	userEntity := user.(*entity.User)
+	template.CreatedBy = int(userEntity.ID)
+
+	if err := h.templateService.CreateTemplate(&template); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, template)
+}
+
+// GetTemplate 获取任务模板
+func (h *Handler) GetTemplate(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid template ID"})
+		return
+	}
+
+	template, err := h.templateService.GetTemplate(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Template not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, template)
+}
+
+// ListTemplates 获取模板列表
+func (h *Handler) ListTemplates(c *gin.Context) {
+	templates, err := h.templateService.ListTemplates()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, templates)
+}
+
+// ListPublicTemplates 获取公共模板列表
+func (h *Handler) ListPublicTemplates(c *gin.Context) {
+	templates, err := h.templateService.ListPublicTemplates()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, templates)
+}
+
+// ListMyTemplates 获取我的模板列表
+func (h *Handler) ListMyTemplates(c *gin.Context) {
+	// 获取当前用户ID
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未认证"})
+		return
+	}
+	userEntity := user.(*entity.User)
+
+	templates, err := h.templateService.ListMyTemplates(int(userEntity.ID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, templates)
+}
+
+// SearchTemplates 搜索模板
+func (h *Handler) SearchTemplates(c *gin.Context) {
+	var req entity.TaskTemplateSearchRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 设置默认值
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 10
+	}
+
+	templates, total, err := h.templateService.SearchTemplates(&req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":      templates,
+		"total":     total,
+		"page":      req.Page,
+		"page_size": req.PageSize,
+	})
+}
+
+// UpdateTemplate 更新任务模板
+func (h *Handler) UpdateTemplate(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid template ID"})
+		return
+	}
+
+	var template entity.TaskTemplate
+	if err := c.ShouldBindJSON(&template); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	template.ID = id
+	if err := h.templateService.UpdateTemplate(&template); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, template)
+}
+
+// DeleteTemplate 删除任务模板
+func (h *Handler) DeleteTemplate(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid template ID"})
+		return
+	}
+
+	if err := h.templateService.DeleteTemplate(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Template deleted successfully"})
+}
+
+// GetPopularTemplates 获取热门模板
+func (h *Handler) GetPopularTemplates(c *gin.Context) {
+	limit := 10
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	templates, err := h.templateService.GetPopularTemplates(limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, templates)
+}
+
+// CreateTaskFromTemplate 从模板创建任务
+func (h *Handler) CreateTaskFromTemplate(c *gin.Context) {
+	var req entity.CreateTaskFromTemplateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 获取当前用户ID
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未认证"})
+		return
+	}
+	userEntity := user.(*entity.User)
+
+	task, err := h.templateService.CreateTaskFromTemplate(&req, int(userEntity.ID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, task)
+}
+
+// GetTemplateStats 获取模板统计
+func (h *Handler) GetTemplateStats(c *gin.Context) {
+	stats, err := h.templateService.GetTemplateStats()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
+// 模板分类相关接口
+
+// CreateCategory 创建模板分类
+func (h *Handler) CreateCategory(c *gin.Context) {
+	var category entity.TaskTemplateCategory
+	if err := c.ShouldBindJSON(&category); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.templateService.CreateCategory(&category); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, category)
+}
+
+// ListCategories 获取分类列表
+func (h *Handler) ListCategories(c *gin.Context) {
+	categories, err := h.templateService.ListCategories()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, categories)
+}
+
+// UpdateCategory 更新分类
+func (h *Handler) UpdateCategory(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		return
+	}
+
+	var category entity.TaskTemplateCategory
+	if err := c.ShouldBindJSON(&category); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	category.ID = id
+	if err := h.templateService.UpdateCategory(&category); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, category)
+}
+
+// DeleteCategory 删除分类
+func (h *Handler) DeleteCategory(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		return
+	}
+
+	if err := h.templateService.DeleteCategory(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Category deleted successfully"})
 }

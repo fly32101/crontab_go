@@ -43,6 +43,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/templates',
+    name: 'Templates',
+    component: () => import('../views/Templates.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/system',
     name: 'System',
     component: () => import('../views/System.vue'),
