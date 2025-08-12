@@ -1,6 +1,42 @@
 const { createApp } = Vue;
 const { ElMessage, ElMessageBox } = ElementPlus;
 
+// 配置axios
+const api = axios.create({
+    baseURL: '/api/v1',
+    timeout: 10000
+});
+
+// 请求拦截器 - 自动添加token
+api.interceptors.request.use(
+    config => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    error => {
+        return Promise.reject(error);
+    }
+);
+
+// 响应拦截器 - 处理认证错误
+api.interceptors.response.use(
+    response => {
+        return response;
+    },
+    error => {
+        if (error.response?.status === 401) {
+            // token过期或无效，清除本地存储并跳转到登录页
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
+        }
+        return Promise.reject(error);
+    }
+);
+
 const app = createApp({
     data() {
         return {
@@ -114,12 +150,8 @@ const app = createApp({
         async loadSystemStats() {
             this.statsLoading = true;
             try {
-                const response = await fetch('/api/v1/system/stats');
-                if (response.ok) {
-                    this.systemStats = await response.json();
-                } else {
-                    throw new Error('获取系统监控数据失败');
-                }
+                const response = await api.get('/system/stats');
+                this.systemStats = response.data;
             } catch (error) {
                 console.error('加载系统监控数据失败:', error);
                 ElMessage.error('加载系统监控数据失败');
@@ -132,20 +164,14 @@ const app = createApp({
         async loadTasks() {
             this.tasksLoading = true;
             try {
-                const response = await fetch(`/api/v1/tasks/paginated?page=${this.taskPagination.page}&page_size=${this.taskPagination.pageSize}`, {
-                    headers: this.getAuthHeaders()
+                const response = await api.get('/tasks/paginated', {
+                    params: {
+                        page: this.taskPagination.page,
+                        page_size: this.taskPagination.pageSize
+                    }
                 });
-                if (response.status === 401) {
-                    this.logout();
-                    return;
-                }
-                if (response.ok) {
-                    const data = await response.json();
-                    this.tasks = data.data || [];
-                    this.taskPagination.total = data.total || 0;
-                } else {
-                    throw new Error('获取任务列表失败');
-                }
+                this.tasks = response.data.data || [];
+                this.taskPagination.total = response.data.total || 0;
             } catch (error) {
                 console.error('加载任务列表失败:', error);
                 ElMessage.error('加载任务列表失败');
@@ -187,37 +213,30 @@ const app = createApp({
                 await this.$refs.taskFormRef.validate();
                 
                 this.saving = true;
-                const url = this.editingTask 
-                    ? `/api/v1/tasks/${this.editingTask.id}`
-                    : '/api/v1/tasks';
-                const method = this.editingTask ? 'PUT' : 'POST';
+                const taskData = {
+                    Name: this.taskForm.name,
+                    Schedule: this.taskForm.schedule,
+                    Command: this.taskForm.command,
+                    Method: this.showHttpConfig ? this.taskForm.method : '',
+                    Headers: this.showHttpConfig ? this.taskForm.headers : '',
+                    Description: this.taskForm.description,
+                    Enabled: this.taskForm.enabled
+                };
                 
-                const response = await fetch(url, {
-                    method: method,
-                    headers: this.getAuthHeaders(),
-                    body: JSON.stringify({
-                        Name: this.taskForm.name,
-                        Schedule: this.taskForm.schedule,
-                        Command: this.taskForm.command,
-                        Method: this.showHttpConfig ? this.taskForm.method : '',
-                        Headers: this.showHttpConfig ? this.taskForm.headers : '',
-                        Description: this.taskForm.description,
-                        Enabled: this.taskForm.enabled
-                    })
-                });
-                
-                if (response.ok) {
-                    ElMessage.success(this.editingTask ? '任务更新成功' : '任务创建成功');
-                    this.showTaskDialog = false;
-                    this.resetTaskForm();
-                    this.loadTasks();
+                if (this.editingTask) {
+                    await api.put(`/tasks/${this.editingTask.id}`, taskData);
+                    ElMessage.success('任务更新成功');
                 } else {
-                    const error = await response.json();
-                    throw new Error(error.error || '保存失败');
+                    await api.post('/tasks', taskData);
+                    ElMessage.success('任务创建成功');
                 }
+                
+                this.showTaskDialog = false;
+                this.resetTaskForm();
+                this.loadTasks();
             } catch (error) {
                 console.error('保存任务失败:', error);
-                ElMessage.error('保存任务失败: ' + error.message);
+                ElMessage.error('保存任务失败: ' + (error.response?.data?.error || error.message));
             } finally {
                 this.saving = false;
             }
@@ -232,17 +251,9 @@ const app = createApp({
                     type: 'warning'
                 });
                 
-                const response = await fetch(`/api/v1/tasks/${id}`, {
-                    method: 'DELETE',
-                    headers: this.getAuthHeaders()
-                });
-                
-                if (response.ok) {
-                    ElMessage.success('任务删除成功');
-                    this.loadTasks();
-                } else {
-                    throw new Error('删除失败');
-                }
+                await api.delete(`/tasks/${id}`);
+                ElMessage.success('任务删除成功');
+                this.loadTasks();
             } catch (error) {
                 if (error !== 'cancel') {
                     console.error('删除任务失败:', error);
@@ -255,26 +266,18 @@ const app = createApp({
         async toggleTask(task) {
             try {
                 const newStatus = !task.enabled;
-                const response = await fetch(`/api/v1/tasks/${task.id}`, {
-                    method: 'PUT',
-                    headers: this.getAuthHeaders(),
-                    body: JSON.stringify({
-                        Name: task.name,
-                        Schedule: task.schedule,
-                        Command: task.command,
-                        Method: task.method,
-                        Headers: task.headers,
-                        Description: task.description,
-                        Enabled: newStatus
-                    })
+                await api.put(`/tasks/${task.id}`, {
+                    Name: task.name,
+                    Schedule: task.schedule,
+                    Command: task.command,
+                    Method: task.method,
+                    Headers: task.headers,
+                    Description: task.description,
+                    Enabled: newStatus
                 });
                 
-                if (response.ok) {
-                    ElMessage.success(`任务${newStatus ? '启用' : '禁用'}成功`);
-                    this.loadTasks();
-                } else {
-                    throw new Error('操作失败');
-                }
+                ElMessage.success(`任务${newStatus ? '启用' : '禁用'}成功`);
+                this.loadTasks();
             } catch (error) {
                 console.error('切换任务状态失败:', error);
                 ElMessage.error('操作失败');
@@ -284,20 +287,11 @@ const app = createApp({
         // 立即执行任务
         async executeTask(id) {
             try {
-                const response = await fetch(`/api/v1/tasks/${id}/execute`, {
-                    method: 'POST',
-                    headers: this.getAuthHeaders()
-                });
-                
-                if (response.ok) {
-                    ElMessage.success('任务执行成功');
-                } else {
-                    const error = await response.json();
-                    throw new Error(error.error || '执行失败');
-                }
+                await api.post(`/tasks/${id}/execute`);
+                ElMessage.success('任务执行成功');
             } catch (error) {
                 console.error('执行任务失败:', error);
-                ElMessage.error('执行任务失败: ' + error.message);
+                ElMessage.error('执行任务失败: ' + (error.response?.data?.error || error.message));
             }
         },
         
@@ -315,16 +309,14 @@ const app = createApp({
             
             this.logsLoading = true;
             try {
-                const response = await fetch(`/api/v1/tasks/${this.currentLogTaskId}/logs/paginated?page=${this.logPagination.page}&page_size=${this.logPagination.pageSize}`, {
-                    headers: this.getAuthHeaders()
+                const response = await api.get(`/tasks/${this.currentLogTaskId}/logs/paginated`, {
+                    params: {
+                        page: this.logPagination.page,
+                        page_size: this.logPagination.pageSize
+                    }
                 });
-                if (response.ok) {
-                    const data = await response.json();
-                    this.taskLogs = data.data || [];
-                    this.logPagination.total = data.total || 0;
-                } else {
-                    throw new Error('获取任务日志失败');
-                }
+                this.taskLogs = response.data.data || [];
+                this.logPagination.total = response.data.total || 0;
             } catch (error) {
                 console.error('加载任务日志失败:', error);
                 ElMessage.error('加载任务日志失败');
@@ -437,13 +429,7 @@ const app = createApp({
             }
         },
         
-        // 获取认证头
-        getAuthHeaders() {
-            return {
-                'Authorization': `Bearer ${this.token}`,
-                'Content-Type': 'application/json'
-            };
-        },
+
         
         // 登出
         logout() {
