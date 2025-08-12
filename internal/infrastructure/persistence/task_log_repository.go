@@ -29,3 +29,25 @@ func (r *SQLiteTaskLogRepository) GetLogsByTaskID(taskID int) ([]entity.TaskLog,
 	}
 	return logs, nil
 }
+
+// GetLogsByTaskIDWithPagination 根据任务ID分页获取任务日志
+func (r *SQLiteTaskLogRepository) GetLogsByTaskIDWithPagination(taskID int, req *entity.PaginationRequest) ([]entity.TaskLog, int64, error) {
+	var logs []entity.TaskLog
+	var total int64
+	
+	// 获取总数
+	if err := r.DB.Model(&entity.TaskLog{}).Where("task_id = ?", taskID).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	// 分页查询
+	if err := r.DB.Where("task_id = ?", taskID).
+		Order("start_time DESC").
+		Offset(req.GetOffset()).
+		Limit(req.PageSize).
+		Find(&logs).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	return logs, total, nil
+}

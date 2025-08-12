@@ -88,6 +88,26 @@ func (h *Handler) ListTasks(c *gin.Context) {
 	c.JSON(http.StatusOK, tasks)
 }
 
+// ListTasksWithPagination 分页获取任务列表
+func (h *Handler) ListTasksWithPagination(c *gin.Context) {
+	var req entity.PaginationRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// 设置默认值
+	paginationReq := entity.NewPaginationRequest(req.Page, req.PageSize)
+	
+	response, err := h.taskService.ListTasksWithPagination(paginationReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 func (h *Handler) UpdateTask(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -140,6 +160,32 @@ func (h *Handler) GetTaskLogs(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, logs)
+}
+
+// GetTaskLogsWithPagination 分页获取任务执行日志
+func (h *Handler) GetTaskLogsWithPagination(c *gin.Context) {
+	taskID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID"})
+		return
+	}
+
+	var req entity.PaginationRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// 设置默认值
+	paginationReq := entity.NewPaginationRequest(req.Page, req.PageSize)
+
+	response, err := h.taskService.GetTaskLogsWithPagination(taskID, paginationReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) GetSystemStats(c *gin.Context) {

@@ -1,0 +1,401 @@
+const { createApp } = Vue;
+const { ElMessage, ElMessageBox } = ElementPlus;
+
+const app = createApp({
+    data() {
+        return {
+            // 系统监控数据
+            systemStats: {},
+            statsLoading: false,
+            
+            // 任务数据
+            tasks: [],
+            tasksLoading: false,
+            taskPagination: {
+                page: 1,
+                pageSize: 10,
+                total: 0
+            },
+            
+            // 搜索和筛选
+            searchKeyword: '',
+            statusFilter: '',
+            
+            // 任务表单
+            showTaskDialog: false,
+            editingTask: null,
+            taskForm: {
+                name: '',
+                schedule: '',
+                command: '',
+                method: 'GET',
+                headers: '',
+                description: '',
+                enabled: true
+            },
+            taskRules: {
+                name: [
+                    { required: true, message: '请输入任务名称', trigger: 'blur' }
+                ],
+                schedule: [
+                    { required: true, message: '请输入调度表达式', trigger: 'blur' }
+                ],
+                command: [
+                    { required: true, message: '请输入命令或URL', trigger: 'blur' }
+                ]
+            },
+            saving: false,
+            
+            // 任务日志
+            showLogsDialog: false,
+            taskLogs: [],
+            logsLoading: false,
+            currentLogTaskId: null,
+            logPagination: {
+                page: 1,
+                pageSize: 10,
+                total: 0
+            }
+        };
+    },
+    
+    computed: {
+        showHttpConfig() {
+            return this.taskForm.command.startsWith('http://') || 
+                   this.taskForm.command.startsWith('https://');
+        },
+        
+        // 过滤后的任务列表
+        filteredTasks() {
+            let filtered = this.tasks;
+            
+            // 关键词搜索
+            if (this.searchKeyword) {
+                const keyword = this.searchKeyword.toLowerCase();
+                filtered = filtered.filter(task => 
+                    task.name.toLowerCase().includes(keyword) ||
+                    task.command.toLowerCase().includes(keyword) ||
+                    (task.description && task.description.toLowerCase().includes(keyword))
+                );
+            }
+            
+            // 状态筛选
+            if (this.statusFilter) {
+                if (this.statusFilter === 'enabled') {
+                    filtered = filtered.filter(task => task.enabled);
+                } else if (this.statusFilter === 'disabled') {
+                    filtered = filtered.filter(task => !task.enabled);
+                }
+            }
+            
+            return filtered;
+        }
+    },
+    
+    mounted() {
+        this.loadSystemStats();
+        this.loadTasks();
+        
+        // 定时刷新系统监控数据
+        setInterval(() => {
+            this.loadSystemStats();
+        }, 30000); // 30秒刷新一次
+    },
+    
+    methods: {
+        // 加载系统监控数据
+        async loadSystemStats() {
+            this.statsLoading = true;
+            try {
+                const response = await fetch('/api/v1/system/stats');
+                if (response.ok) {
+                    this.systemStats = await response.json();
+                } else {
+                    throw new Error('获取系统监控数据失败');
+                }
+            } catch (error) {
+                console.error('加载系统监控数据失败:', error);
+                ElMessage.error('加载系统监控数据失败');
+            } finally {
+                this.statsLoading = false;
+            }
+        },
+        
+        // 加载任务列表
+        async loadTasks() {
+            this.tasksLoading = true;
+            try {
+                const response = await fetch(`/api/v1/tasks/paginated?page=${this.taskPagination.page}&page_size=${this.taskPagination.pageSize}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.tasks = data.data || [];
+                    this.taskPagination.total = data.total || 0;
+                } else {
+                    throw new Error('获取任务列表失败');
+                }
+            } catch (error) {
+                console.error('加载任务列表失败:', error);
+                ElMessage.error('加载任务列表失败');
+            } finally {
+                this.tasksLoading = false;
+            }
+        },
+        
+        // 任务分页处理
+        handleTaskPageChange(page) {
+            this.taskPagination.page = page;
+            this.loadTasks();
+        },
+        
+        handleTaskPageSizeChange(pageSize) {
+            this.taskPagination.pageSize = pageSize;
+            this.taskPagination.page = 1;
+            this.loadTasks();
+        },
+        
+        // 编辑任务
+        editTask(task) {
+            this.editingTask = task;
+            this.taskForm = {
+                name: task.name,
+                schedule: task.schedule,
+                command: task.command,
+                method: task.method || 'GET',
+                headers: task.headers || '',
+                description: task.description || '',
+                enabled: task.enabled
+            };
+            this.showTaskDialog = true;
+        },
+        
+        // 保存任务
+        async saveTask() {
+            try {
+                await this.$refs.taskFormRef.validate();
+                
+                this.saving = true;
+                const url = this.editingTask 
+                    ? `/api/v1/tasks/${this.editingTask.id}`
+                    : '/api/v1/tasks';
+                const method = this.editingTask ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        Name: this.taskForm.name,
+                        Schedule: this.taskForm.schedule,
+                        Command: this.taskForm.command,
+                        Method: this.showHttpConfig ? this.taskForm.method : '',
+                        Headers: this.showHttpConfig ? this.taskForm.headers : '',
+                        Description: this.taskForm.description,
+                        Enabled: this.taskForm.enabled
+                    })
+                });
+                
+                if (response.ok) {
+                    ElMessage.success(this.editingTask ? '任务更新成功' : '任务创建成功');
+                    this.showTaskDialog = false;
+                    this.resetTaskForm();
+                    this.loadTasks();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || '保存失败');
+                }
+            } catch (error) {
+                console.error('保存任务失败:', error);
+                ElMessage.error('保存任务失败: ' + error.message);
+            } finally {
+                this.saving = false;
+            }
+        },
+        
+        // 删除任务
+        async deleteTask(id) {
+            try {
+                await ElMessageBox.confirm('确定要删除这个任务吗？', '确认删除', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                });
+                
+                const response = await fetch(`/api/v1/tasks/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    ElMessage.success('任务删除成功');
+                    this.loadTasks();
+                } else {
+                    throw new Error('删除失败');
+                }
+            } catch (error) {
+                if (error !== 'cancel') {
+                    console.error('删除任务失败:', error);
+                    ElMessage.error('删除任务失败');
+                }
+            }
+        },
+        
+        // 启用/禁用任务
+        async toggleTask(task) {
+            try {
+                const newStatus = !task.enabled;
+                const response = await fetch(`/api/v1/tasks/${task.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        Name: task.name,
+                        Schedule: task.schedule,
+                        Command: task.command,
+                        Method: task.method,
+                        Headers: task.headers,
+                        Description: task.description,
+                        Enabled: newStatus
+                    })
+                });
+                
+                if (response.ok) {
+                    ElMessage.success(`任务${newStatus ? '启用' : '禁用'}成功`);
+                    this.loadTasks();
+                } else {
+                    throw new Error('操作失败');
+                }
+            } catch (error) {
+                console.error('切换任务状态失败:', error);
+                ElMessage.error('操作失败');
+            }
+        },
+        
+        // 立即执行任务
+        async executeTask(id) {
+            try {
+                const response = await fetch(`/api/v1/tasks/${id}/execute`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    ElMessage.success('任务执行成功');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || '执行失败');
+                }
+            } catch (error) {
+                console.error('执行任务失败:', error);
+                ElMessage.error('执行任务失败: ' + error.message);
+            }
+        },
+        
+        // 显示任务日志
+        async showTaskLogs(task) {
+            this.currentLogTaskId = task.id;
+            this.logPagination.page = 1;
+            this.showLogsDialog = true;
+            await this.loadTaskLogs();
+        },
+        
+        // 加载任务日志
+        async loadTaskLogs() {
+            if (!this.currentLogTaskId) return;
+            
+            this.logsLoading = true;
+            try {
+                const response = await fetch(`/api/v1/tasks/${this.currentLogTaskId}/logs/paginated?page=${this.logPagination.page}&page_size=${this.logPagination.pageSize}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.taskLogs = data.data || [];
+                    this.logPagination.total = data.total || 0;
+                } else {
+                    throw new Error('获取任务日志失败');
+                }
+            } catch (error) {
+                console.error('加载任务日志失败:', error);
+                ElMessage.error('加载任务日志失败');
+            } finally {
+                this.logsLoading = false;
+            }
+        },
+        
+        // 日志分页处理
+        handleLogPageChange(page) {
+            this.logPagination.page = page;
+            this.loadTaskLogs();
+        },
+        
+        handleLogPageSizeChange(pageSize) {
+            this.logPagination.pageSize = pageSize;
+            this.logPagination.page = 1;
+            this.loadTaskLogs();
+        },
+        
+        // 重置任务表单
+        resetTaskForm() {
+            this.editingTask = null;
+            this.taskForm = {
+                name: '',
+                schedule: '',
+                command: '',
+                method: 'GET',
+                headers: '',
+                description: '',
+                enabled: true
+            };
+            if (this.$refs.taskFormRef) {
+                this.$refs.taskFormRef.resetFields();
+            }
+        },
+        
+        // 命令输入变化处理
+        onCommandChange() {
+            // 当命令变为URL时，自动设置默认的HTTP方法
+            if (this.showHttpConfig && !this.taskForm.method) {
+                this.taskForm.method = 'GET';
+            }
+        },
+        
+        // 格式化时间
+        formatTime(timestamp) {
+            if (!timestamp) return '-';
+            return new Date(timestamp).toLocaleString('zh-CN');
+        },
+        
+        // 搜索处理
+        handleSearch() {
+            // 搜索时重置到第一页
+            this.taskPagination.page = 1;
+        },
+        
+        // 状态筛选处理
+        handleStatusFilter() {
+            // 筛选时重置到第一页
+            this.taskPagination.page = 1;
+        },
+        
+        // 重置筛选条件
+        resetFilters() {
+            this.searchKeyword = '';
+            this.statusFilter = '';
+            this.taskPagination.page = 1;
+        }
+    },
+    
+    watch: {
+        showTaskDialog(val) {
+            if (!val) {
+                this.resetTaskForm();
+            }
+        }
+    }
+});
+
+// 注册所有图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
+
+app.use(ElementPlus);
+app.mount('#app');

@@ -49,3 +49,20 @@ func (r *SQLiteTaskRepository) FindEnabled() ([]*entity.Task, error) {
 	}
 	return tasks, nil
 }
+
+func (r *SQLiteTaskRepository) FindWithPagination(req *entity.PaginationRequest) ([]*entity.Task, int64, error) {
+	var tasks []*entity.Task
+	var total int64
+	
+	// 获取总数
+	if err := r.DB.Model(&entity.Task{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	// 分页查询
+	if err := r.DB.Offset(req.GetOffset()).Limit(req.PageSize).Find(&tasks).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	return tasks, total, nil
+}

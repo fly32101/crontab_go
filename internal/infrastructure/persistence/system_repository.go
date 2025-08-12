@@ -25,3 +25,19 @@ func (r *SQLiteSystemRepository) GetLatestStats() (*entity.SystemStats, error) {
 	}
 	return &stats, nil
 }
+
+func (r *SQLiteSystemRepository) GetStatsHistory(limit int, offset int) ([]entity.SystemStats, error) {
+	var stats []entity.SystemStats
+	if err := r.DB.Order("timestamp DESC").Limit(limit).Offset(offset).Find(&stats).Error; err != nil {
+		return nil, err
+	}
+	return stats, nil
+}
+
+func (r *SQLiteSystemRepository) GetStatsCount() (int64, error) {
+	var count int64
+	if err := r.DB.Model(&entity.SystemStats{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}

@@ -35,10 +35,12 @@ func registerRoutes(engine *gin.Engine, handler *Handler) {
 	{
 		tasks.POST("", handler.CreateTask)
 		tasks.GET("", handler.ListTasks)
+		tasks.GET("/paginated", handler.ListTasksWithPagination) // 分页接口
 		tasks.GET(":id", handler.GetTask)
 		tasks.PUT(":id", handler.UpdateTask)
 		tasks.DELETE(":id", handler.DeleteTask)
 		tasks.GET(":id/logs", handler.GetTaskLogs)
+		tasks.GET(":id/logs/paginated", handler.GetTaskLogsWithPagination) // 分页日志接口
 		tasks.POST(":id/execute", handler.ExecuteTask)
 	}
 

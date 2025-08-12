@@ -46,6 +46,26 @@ func (s *Service) GetTaskLogs(taskID int) ([]entity.TaskLog, error) {
 	return s.taskLogRepo.GetLogsByTaskID(taskID)
 }
 
+// ListTasksWithPagination 分页获取任务列表
+func (s *Service) ListTasksWithPagination(req *entity.PaginationRequest) (*entity.PaginationResponse, error) {
+	tasks, total, err := s.taskRepo.FindWithPagination(req)
+	if err != nil {
+		return nil, err
+	}
+	
+	return entity.NewPaginationResponse(req.Page, req.PageSize, total, tasks), nil
+}
+
+// GetTaskLogsWithPagination 分页获取任务执行日志
+func (s *Service) GetTaskLogsWithPagination(taskID int, req *entity.PaginationRequest) (*entity.PaginationResponse, error) {
+	logs, total, err := s.taskLogRepo.GetLogsByTaskIDWithPagination(taskID, req)
+	if err != nil {
+		return nil, err
+	}
+	
+	return entity.NewPaginationResponse(req.Page, req.PageSize, total, logs), nil
+}
+
 // ExecuteTask 立即执行任务
 func (s *Service) ExecuteTask(id int) error {
 	task, err := s.taskRepo.FindByID(id)

@@ -9,9 +9,5 @@ type TaskRepository interface {
 	FindByID(id int) (*entity.Task, error)
 	FindAll() ([]*entity.Task, error)
 	FindEnabled() ([]*entity.Task, error)
-}
-
-type SystemRepository interface {
-	SaveStats(stats *entity.SystemStats) error
-	GetLatestStats() (*entity.SystemStats, error)
+	FindWithPagination(req *entity.PaginationRequest) ([]*entity.Task, int64, error)
 }

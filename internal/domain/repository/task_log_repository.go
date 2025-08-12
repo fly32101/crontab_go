@@ -9,4 +9,7 @@ type TaskLogRepository interface {
 	
 	// GetLogsByTaskID 根据任务ID获取任务日志
 	GetLogsByTaskID(taskID int) ([]entity.TaskLog, error)
+	
+	// GetLogsByTaskIDWithPagination 根据任务ID分页获取任务日志
+	GetLogsByTaskIDWithPagination(taskID int, req *entity.PaginationRequest) ([]entity.TaskLog, int64, error)
 }
